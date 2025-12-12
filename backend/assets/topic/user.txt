@@ -1,0 +1,5 @@
+### TOEIC TOPIC GENERATION REQUEST
+
+**ACTION:** Generate a realistic TOEIC Writing topic.
+
+**PART:** {part}

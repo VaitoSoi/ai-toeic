@@ -1,0 +1,14 @@
+### JSON FORMATTING CORRECTION REQUEST
+
+**ACTION:** Regenerate the response to strictly comply with the required JSON schema.
+
+**ERROR CONTEXT:** The previous output failed to parse or adhere to the required format.
+
+**PREVIOUS INVALID OUTPUT:**
+{previous_response}
+
+**STRICT CONSTRAINTS:**
+1. Output **ONLY** a single, valid raw JSON object.
+2. Remove all Markdown fences (no ```json).
+3. Remove all conversational text.
+4. Ensure all indices in `annotations` map exactly to the original input text.

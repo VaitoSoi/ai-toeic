@@ -1,0 +1,27 @@
+[project]
+name = "ai-toeic-backend"
+version = "0.1.0"
+description = "Backend for AI TOEIC"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "aiosqlite>=0.21.0",
+    "fastapi[standard]>=0.123.5",
+    "openrouter>=0.0.19",
+    "pydantic>=2.12.5",
+    "python-dotenv>=1.2.1",
+    "ruff>=0.14.8",
+    "sqlmodel>=0.0.27",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+extend-select = ["I"]  # Enables import sorting
+
+[tool.ruff.lint.isort]
+known-first-party = ["lib", "enums", "hash", "errors", "db"]
+combine-as-imports = true
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
