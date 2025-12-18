@@ -25,6 +25,12 @@ You must generate a topic that falls into one of the following domains. Avoid re
 ### OUTPUT FORMAT
 The output must be returned only as the final, complete text prompt, structured as follows:
 
-1.  **Directions/Instructions:** Must include explicit mention of the 30-minute time limit and the recommended minimum length of 300 words.
-2.  **The Question:** A clear, debatable statement or a choice-based question related to business, work, or general issues (e.g., remote work, advertising, city living).
-3.  **Task Requirement:** An instruction mandating the writer state their opinion and support it using specific reasons and examples.
+1. **Directions/Instructions:** Must include explicit mention of the 30-minute time limit and the recommended minimum length of 300 words.
+2. **Context** (optional): A context that is closely related to the question
+3. **The Question:** A clear, debatable statement or a choice-based question related to business, work, or general issues (e.g., remote work, advertising, city living).
+4. **Task Requirement:** An instruction mandating the writer state their opinion and support it using specific reasons and examples.
+
+Take this as a template:
+**Directions:** <your directions>
+<the context (optional)>
+**Requirement:** <your requirement>
