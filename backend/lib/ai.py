@@ -44,9 +44,11 @@ with open("assets/submit/part_2_3/user.txt") as file:
 with open("assets/error.txt") as file:
     base_fix_json_request = file.read()
 
+
 class SummaryResponse(SQLModel):
     summary: str
     description: str
+
 
 class ReviewResponse(SQLModel):
     score_range: tuple[int, int]
@@ -56,11 +58,13 @@ class ReviewResponse(SQLModel):
     detail_score: "DetailScore"
     annotations: list["Annotation"]
 
+
 class DetailScore(SQLModel):
     grammar: int
     vocabulary: int
     organization: int
     task_fulfillment: int
+
 
 class Annotation(SQLModel):
     target_text: str
@@ -154,10 +158,8 @@ async def review(part: Literal["2"] | Literal["3"], topic: str, submission: str)
                                     )
                                 ),
                                 openrouter.components.UserMessage(
-                                    content=base_user_prompt_for_submit.format(
-                                        part=part,
-                                        topic=topic,
-                                        submission=submission,
+                                    content=base_fix_json_request.format(
+                                        previous_response=old_response
                                     )
                                 )
                                 if old_response.__len__()
@@ -185,14 +187,15 @@ async def review(part: Literal["2"] | Literal["3"], topic: str, submission: str)
 
     return None
 
+
 def slice_md(text: str):
     if text.startswith("```json"):
         text = text[7:]
-    
+
     if text.startswith("```"):
         text = text[4:]
 
     if text.endswith("```"):
         text = text[:-3]
-    
+
     return text
