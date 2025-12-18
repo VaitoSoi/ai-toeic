@@ -85,16 +85,14 @@ async def generate_topic(part: Literal["2"] | Literal["3"]):
             await client.chat.send_async(
                 model=QUESTION_MODEL,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": system_prompt_for_topic_p2
+                    openrouter.components.SystemMessage(
+                        content=system_prompt_for_topic_p2
                         if part == "2"
-                        else system_prompt_for_topic_p3,
-                    },
-                    {
-                        "role": "user",
-                        "content": base_user_prompt_for_topic.format(part=part),
-                    },
+                        else system_prompt_for_topic_p3
+                    ),
+                    openrouter.components.UserMessage(
+                        content=base_user_prompt_for_topic.format(part=part)
+                    ),
                 ],
             )
         )
@@ -110,14 +108,10 @@ async def summary(topic: str):
                 await client.chat.send_async(
                     model=SUMMARY_MODEL,
                     messages=[
-                        {
-                            "role": "system",
-                            "content": system_prompt_for_summary,
-                        },
-                        {
-                            "role": "user",
-                            "content": topic,
-                        },
+                        openrouter.components.SystemMessage(
+                            content=system_prompt_for_summary
+                        ),
+                        openrouter.components.UserMessage(content=topic),
                     ],
                 )
             )
