@@ -122,8 +122,8 @@ and the content of test questions.
     {
       "target_text": string, // The EXACT text segment in the original essay containing the error.
       "context_before": string, // The 3-5 words immediately preceding the target_text (for uniqueness).
-      "type": "grammar" | "vocabulary" | "coherence" | "mechanics",
-      "replacement": string | null, // The corrected text segment, or null if deletion is required.
+      "type": "grammar" | "vocabulary" | "coherence" | "mechanics" | "suggestion",
+      "replacement": string | null, // The corrected or suggested text segment, or null if deletion is required.
       "feedback": string // Concise reason for the correction.
     }
   ]
