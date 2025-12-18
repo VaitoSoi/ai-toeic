@@ -57,6 +57,7 @@ class ReviewResponse(SQLModel):
     summary_feedback: str
     detail_score: "DetailScore"
     annotations: list["Annotation"]
+    improvement_suggestions: list[str]
 
 
 class DetailScore(SQLModel):
