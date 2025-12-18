@@ -133,6 +133,9 @@ class Review(SQLModel, table=True):
     annotations: Optional[list[Annotation]] = Field(
         default=None, sa_type=PydanticListJSON(Annotation)
     )
+    improvement_suggestions: Optional[list[str]] = Field(
+        default=None, sa_column=Column(JSON)
+    )
 
     created_at: datetime = Field(default_factory=lambda: datetime.now())
 
@@ -151,6 +154,7 @@ class SlicedReview(BaseModel):
     summary_feedback: Optional[str] = PydanticField(default=None)
     detail_score: Optional[DetailScore] = PydanticField(default=None)
     annotations: Optional[list[Annotation]] = PydanticField(default=None)
+    improvement_suggestions: Optional[list[str]] = PydanticField(default=None)
 
     created_at: datetime
 
@@ -214,6 +218,19 @@ TOPIC
 """
 
 
+def format_topic(topic: Topic):
+    return SlicedTopic(
+        id=topic.id,
+        type=topic.type,
+        part=topic.part,
+        question=topic.question,
+        summary=topic.summary,
+        submissions=[BaseSubmission(**sub.model_dump()) for sub in topic.submissions],
+        reviews=[SlicedReview(**review.model_dump()) for review in topic.reviews],
+        created_at=topic.created_at,
+    )
+
+
 async def get_topics(_session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
         statement = (
@@ -225,23 +242,7 @@ async def get_topics(_session: AsyncSession | None = None):
             )
         )
         topics = list((await session.execute(statement)).scalars().all())
-        return [
-            SlicedTopic(
-                id=topic.id,
-                type=topic.type,
-                part=topic.part,
-                question=topic.question,
-                summary=topic.summary,
-                submissions=[
-                    BaseSubmission(**sub.model_dump()) for sub in topic.submissions
-                ],
-                reviews=[
-                    SlicedReview(**review.model_dump()) for review in topic.reviews
-                ],
-                created_at=topic.created_at,
-            )
-            for topic in topics
-        ]
+        return [format_topic(topic) for topic in topics]
 
     return await create_session_and_run(_inner, _session)
 
@@ -268,16 +269,7 @@ async def _get_topic(id: str, _session: AsyncSession | None = None):
 
 async def get_topic(id: str, _session: AsyncSession | None = None):
     topic = await _get_topic(id, _session)
-    return SlicedTopic(
-        id=topic.id,
-        type=topic.type,
-        part=topic.part,
-        question=topic.question,
-        summary=topic.summary,
-        submissions=[BaseSubmission(**sub.model_dump()) for sub in topic.submissions],
-        reviews=[SlicedReview(**review.model_dump()) for review in topic.reviews],
-        created_at=topic.created_at,
-    )
+    return format_topic(topic)
 
 
 async def create_topic(
@@ -293,16 +285,7 @@ async def create_topic(
         )
         session.add(topic)
         await session.commit()
-        return SlicedTopic(
-            id=topic.id,
-            type=topic.type,
-            part=topic.part,
-            question=topic.question,
-            summary=topic.summary,
-            submissions=[],
-            reviews=[],
-            created_at=topic.created_at,
-        )
+        return format_topic(topic)
 
     return await create_session_and_run(_inner, _session)
 
@@ -321,6 +304,18 @@ SUBMISSION
 """
 
 
+def format_submission(submission: Submission):
+    return SlicedSubmission(
+        id=submission.id,
+        topic_id=submission.topic_id,
+        submission=submission.submission,
+        review=SlicedReview(**submission.review.model_dump())
+        if submission.review
+        else None,
+        created_at=submission.created_at,
+    )
+
+
 async def get_submissions(_session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
         statement = (
@@ -329,18 +324,7 @@ async def get_submissions(_session: AsyncSession | None = None):
             .options(selectinload(Submission.topic), selectinload(Submission.review))  # type: ignore
         )
         submissions = list((await session.execute(statement)).scalars().all())
-        return [
-            SlicedSubmission(
-                id=submission.id,
-                topic_id=submission.topic_id,
-                submission=submission.submission,
-                review=SlicedReview(**submission.review.model_dump())
-                if submission.review
-                else None,
-                created_at=submission.created_at,
-            )
-            for submission in submissions
-        ]
+        return [format_submission(submission) for submission in submissions]
 
     return await create_session_and_run(_inner, _session)
 
@@ -363,15 +347,7 @@ async def _get_submission(id: str, _session: AsyncSession | None = None):
 
 async def get_submission(id: str, _session: AsyncSession | None = None):
     submission = await _get_submission(id, _session)
-    return SlicedSubmission(
-        id=submission.id,
-        topic_id=submission.topic_id,
-        submission=submission.submission,
-        review=SlicedReview(**submission.review.model_dump())
-        if submission.review
-        else None,
-        created_at=submission.created_at,
-    )
+    return format_submission(submission)
 
 
 async def get_submissions_of_topic(topic_id: str, _session: AsyncSession | None = None):
@@ -387,13 +363,7 @@ async def submit(
         submission = Submission(topic_id=topic.id, submission=submitted_text)
         session.add(submission)
         await session.commit()
-        return SlicedSubmission(
-            id=submission.id,
-            topic_id=submission.topic_id,
-            submission=submission.submission,
-            review=None,
-            created_at=submission.created_at,
-        )
+        return format_submission(submission)
 
     return await create_session_and_run(_inner, _session)
 
@@ -406,15 +376,7 @@ async def update_submission(
         submission.submission = submitted_text
         session.add(submission)
         await session.commit()
-        return SlicedSubmission(
-            id=submission.id,
-            topic_id=submission.topic_id,
-            submission=submission.submission,
-            review=SlicedReview(**submission.review.model_dump())
-            if submission.review
-            else None,
-            created_at=submission.created_at,
-        )
+        return format_submission(submission)
 
     return await create_session_and_run(_inner)
 
@@ -433,26 +395,28 @@ REVIEW
 """
 
 
+def format_review(review: Review):
+    return SlicedReview(
+        id=review.id,
+        topic_id=review.topic_id,
+        submission_id=review.submission_id,
+        status=review.status,
+        score_range=review.score_range,
+        level_achieved=review.level_achieved,
+        overall_feedback=review.overall_feedback,
+        summary_feedback=review.summary_feedback,
+        detail_score=review.detail_score,
+        annotations=review.annotations,
+        improvement_suggestions=review.improvement_suggestions,
+        created_at=review.created_at,
+    )
+
+
 async def get_reviews(_session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
         statement = select(Review).order_by(desc(Review.created_at))
         reviews = list((await session.execute(statement)).scalars().all())
-        return [
-            SlicedReview(
-                id=review.id,
-                topic_id=review.topic_id,
-                submission_id=review.submission_id,
-                status=review.status,
-                score_range=review.score_range,
-                level_achieved=review.level_achieved,
-                overall_feedback=review.overall_feedback,
-                summary_feedback=review.summary_feedback,
-                detail_score=review.detail_score,
-                annotations=review.annotations,
-                created_at=review.created_at,
-            )
-            for review in reviews
-        ]
+        return [format_review(review) for review in reviews]
 
     return await create_session_and_run(_inner, _session)
 
@@ -475,19 +439,7 @@ async def _get_review(id: str, _session: AsyncSession | None = None):
 
 async def get_review(id: str, _session: AsyncSession | None = None):
     review = await _get_review(id, _session)
-    return SlicedReview(
-        id=review.id,
-        topic_id=review.topic_id,
-        submission_id=review.submission_id,
-        status=review.status,
-        score_range=review.score_range,
-        level_achieved=review.level_achieved,
-        overall_feedback=review.overall_feedback,
-        summary_feedback=review.summary_feedback,
-        detail_score=review.detail_score,
-        annotations=review.annotations,
-        created_at=review.created_at,
-    )
+    return format_review(review)
 
 
 async def get_reviews_of_topic(topic_id: str, _session: AsyncSession | None = None):
@@ -501,19 +453,7 @@ async def get_review_of_submission(
     submission = await _get_submission(submission_id, _session)
     if submission.review:
         review = submission.review
-        return SlicedReview(
-            id=review.id,
-            topic_id=review.topic_id,
-            submission_id=review.submission_id,
-            status=review.status,
-            score_range=review.score_range,
-            level_achieved=review.level_achieved,
-            overall_feedback=review.overall_feedback,
-            summary_feedback=review.summary_feedback,
-            detail_score=review.detail_score,
-            annotations=review.annotations,
-            created_at=review.created_at,
-        )
+        return format_review(review)
     return None
 
 
@@ -542,6 +482,9 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
                         review.summary_feedback = response.summary_feedback
                         review.detail_score = response.detail_score
                         review.annotations = response.annotations
+                        review.improvement_suggestions = (
+                            response.improvement_suggestions
+                        )
                     update_session.add(review)
                     await update_session.commit()
 
