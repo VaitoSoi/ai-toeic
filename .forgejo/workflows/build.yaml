@@ -36,6 +36,6 @@ jobs:
             - name: Login to docker
               run: docker login -u ${{ forgejo.actor }} -p ${{ secrets.REGISTRY_TOKEN }} ${{ forgejo.server_url }}
             - name: Build the image
-              run: docker build -t ${{ forgejo.server_url }}/${{ forgejo.repository }}:latest
+              run: docker build -t ${{ forgejo.server_url }}/${{ forgejo.repository }}:latest .
             - name: Push the image
               run: docker push ${{ forgejo.server_url }}/${{ forgejo.repository }}:latest
