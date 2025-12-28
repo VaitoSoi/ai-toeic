@@ -8,7 +8,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Login to docker
-              run: docker login -u ${{ forgejo.actor }} -p ${{ secret.REGISTRY_TOKEN }} ${{ forgejo.server_url }}
+              run: docker login -u ${{ forgejo.actor }} -p ${{ secrets.REGISTRY_TOKEN }} ${{ forgejo.server_url }}
             - name: Build the image
               run: docker build -t ${{ forgejo.server_url }}/${{ forgejo.repository }}:latest
             - name: Push the image
