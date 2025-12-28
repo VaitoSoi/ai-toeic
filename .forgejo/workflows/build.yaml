@@ -1,0 +1,16 @@
+on: [push]
+jobs:
+    build:
+        runs-on: runner-1
+        steps:
+          - name: checkout
+            uses: actions/checkout@v4
+          - name: login to docker
+            run: |
+                echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ forgejo.server_url }} -u ${{ forgejo.actor }} --password-stdin
+          - name: build image
+            run: |
+                IMAGE_NAME="${{ github.server_url }}/${{ github.repository }}"
+
+                docker build -t $IMAGE_NAME:latest .
+                docker push $IMAGE_NAME:latest
