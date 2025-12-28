@@ -27,7 +27,7 @@ jobs:
                 apt update -y
                 
                 # Install NodeJS (for checkout)
-                apt install nodejs
+                apt install -y nodejs
 
                 # Install Docker (for build and push image)
                 apt install -y docker-ce docker-ce-cli docker-buildx-plugin
