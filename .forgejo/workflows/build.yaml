@@ -5,6 +5,8 @@ jobs:
         container:
             image: ubuntu:latest
         steps:
+            - name: Update package
+              run: apt update -y
             - name: Install NodeJS
               run: apt -y install nodejs
             - name: Login to Docker Hub
