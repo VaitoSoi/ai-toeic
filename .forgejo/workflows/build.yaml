@@ -30,7 +30,7 @@ jobs:
                 apt install nodejs
 
                 # Install Docker (for build and push image)
-                apt install docker-ce docker-ce-cli docker-buildx-plugin
+                apt install -y docker-ce docker-ce-cli docker-buildx-plugin
             - name: Checkout
               uses: actions/checkout@v4
             - name: Login to docker
