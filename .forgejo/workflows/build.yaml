@@ -1,5 +1,9 @@
 on: [push]
 jobs:
+    test:
+        runs-on: docker
+        steps:
+          - run: echo "Its ok"
     build:
         runs-on: docker
         steps:
