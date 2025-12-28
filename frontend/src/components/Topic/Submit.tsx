@@ -65,7 +65,7 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
             </div>
         </div>
         : !confirmed
-            ? <div className="w-2/3 flex flex-col text-lg m-auto p-5 border-2 rounded-md">
+            ? <div className="lg:w-2/3 flex flex-col text-lg my-auto mx-10 lg:m-auto p-5 border-2 rounded-md">
                 <h1 className="text-xl font-bold">Direction</h1>
                 {topic.part == "2"
                     ? <p>
@@ -98,7 +98,7 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         </div>
                     </div>
                 }</div>
-                : <div className="w-9/10 h-full overflow-hidden flex-1 flex flex-col gap-5 py-10">
+                : <div className="lg:w-9/10 h-full lg:overflow-hidden flex-1 flex flex-col gap-5 py-5 lg:py-10">
                     <div
                         className="w-fit flex flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
                         onClick={() => navigator(`/topic/${topic.id}`, { viewTransition: true })}
@@ -106,8 +106,8 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         <ChevronLeft className="size-7" />
                         <p className="text-lg">Cancel & Go back</p>
                     </div>
-                    <div className="flex flex-row gap-2 flex-1 min-h-0">
-                        <div className="w-2/5 flex flex-col p-5 border-2 rounded-md gap-2 ">
+                    <div className="flex flex-col lg:flex-row lg:gap-2 flex-1 min-h-0">
+                        <div className="lg:w-2/5 flex flex-col p-5 border-2 lg:rounded-md gap-2 ">
                             <div className="flex flex-row items-center gap-5 ">
                                 {topic.part == "2"
                                     ? <h1 className="w-fit p-2 bg-green-200 rounded-sm text-green-700 text-sm font-bold uppercase">Response to an email</h1>
@@ -121,13 +121,14 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                             <h1 className="text-2xl font-bold">{topic.summary?.summary}</h1>
                             <div className="text-xl whitespace-pre-wrap overflow-y-auto"><Markdown>{topic.question}</Markdown></div>
                         </div>
-                        <div className="w-3/5 flex flex-col border-2 rounded-md overflow-hidden">
+                        <div className="lg:w-3/5 flex flex-col border-2 lg:rounded-md">
                             <textarea
                                 className="flex-1 w-full p-6 resize-none focus:outline-none text-slate-800 leading-relaxed overflow-scroll"
                                 placeholder="Start writing your essay here..."
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
                                 spellCheck="false"
+                                rows={10}
                             />
                             <div className="py-5 px-10 border-t-2 flex flex-row items-center">
                                 <p className="text-slate-500">{text.split(" ").filter(x => x.length).length} word(s)</p>

@@ -24,10 +24,10 @@ function List() {
     }, []);
     useEffect(() => void getTopics(), [getTopics]);
 
-    return <div className="w-full h-fit p-5 pb-5 pl-10 flex flex-col">
+    return <div className="w-full h-fit p-5 lg:pl-10 flex flex-col">
         <h1 className="text-3xl font-semibold">🖊️ Essays</h1>
         <h2 className="text-xl font-normal ml-12">Select a writing section to begin your training session</h2>
-        <div className="grid grid-cols-4 py-5 gap-5">
+        <div className="grid lg:grid-cols-4 grid-cols-1 py-5 gap-5">
             {topics
                 ? topics.map((val) => <div
                     className="min-h-65 border-2 rounded-md overflow-hidden hover:shadow-md transition-shadow duration-200 group cursor-pointer"

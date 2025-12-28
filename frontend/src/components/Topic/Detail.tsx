@@ -12,7 +12,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData?: Topic }) {
     const navigator = useNavigate();
     const [topic, setTopic] = useState<Topic | undefined>(preloadedData);
-    // const deleteTopic
 
     const getTopic = useCallback(async () => {
         try {
@@ -51,8 +50,8 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
 
     return <div className="w-full h-full flex flex-col overflow-hidden">
         <AlertDialog>
-            <div className="w-2/3 h-full flex flex-col mx-auto gap-10 py-10 overflow-y-auto">{topic ? <>
-                <div className="flex flex-col gap-2">
+            <div className="w-full lg:w-2/3 h-full flex flex-col mx-auto gap-10 lg:py-10 overflow-y-auto">{topic ? <>
+                <div className="flex flex-col lg:gap-2 mt-5 lg:mt-0">
                     <div
                         className="w-fit p-4 flex flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
                         onClick={() => navigator("/", { viewTransition: true })}
@@ -60,25 +59,27 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         <ChevronLeft className="size-7" />
                         <p className="text-lg">Go back to dashboard</p>
                     </div>
-                    <div className="flex flex-col gap-5 w-full p-5 border-2 border-slate-200 rounded-md">
-                        <div className="flex flex-row items-center gap-5 w-full">
-                            <div className="size-fit rounded-xl p-5 bg-slate-300">
-                                {topic.part == "2" ? <Mail strokeWidth={1.9} className="size-10" /> : <NotebookText strokeWidth={1.9} className="size-10" />}
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold">{topic.summary?.summary}</h1>
-                                <p className="text-xl">{topic.part == "2" ? "Q6 - 7 Response to an email" : "Q8 Opinion essay"} • {topic.submissions.length} attemp(s)</p>
+                    <div className="flex flex-col gap-5 w-full p-5 lg:border-2 border-slate-200 lg:rounded-md">
+                        <div className="flex flex-col lg:flex-row w-full gap-3">
+                            <div className="flex flex-row items-center gap-5">
+                                <div className="size-fit rounded-xl p-5 bg-slate-300">
+                                    {topic.part == "2" ? <Mail strokeWidth={1.9} className="size-10" /> : <NotebookText strokeWidth={1.9} className="size-10" />}
+                                </div>
+                                <div>
+                                    <h1 className="text-xl lg:text-2xl font-bold">{topic.summary?.summary}</h1>
+                                    <p className="text-lg lg:text-xl">{topic.part == "2" ? "P2 Response to an email" : "P3 Opinion essay"}</p>
+                                </div>
                             </div>
                             <div className="flex flex-row gap-2 ml-auto mr-5">
                                 <button
-                                    className="hover:bg-blue-400 p-4 rounded-md flex flex-row items-center gap-2 cursor-pointer transition-all duration-200"
+                                    className="bg-blue-400 lg:bg-transparent lg:hover:bg-blue-400 py-3 px-4 lg:p-4 rounded-md flex flex-row items-center gap-2 cursor-pointer transition-all duration-200"
                                     onClick={() => navigator(`/topic/${topic.id}/submit`, { viewTransition: true, state: JSON.stringify(topic) })}
                                 >
                                     <Plus strokeWidth={3} className="size-7" />
                                     <p className="text-lg font-normal">Write new essay</p>
                                 </button>
                                 <AlertDialogTrigger asChild>
-                                    <button className="hover:bg-red-400 p-4 rounded-md flex flex-row items-center cursor-pointer transition-all duration-200">
+                                    <button className="bg-red-400 lg:bg-transparent lg:hover:bg-red-400 p-3 lg:p-4 rounded-md flex flex-row items-center cursor-pointer transition-all duration-200">
                                         <Trash strokeWidth={3} className="size-7" />
                                     </button>
                                 </AlertDialogTrigger>
@@ -90,15 +91,15 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                     </div>
                 </div>
                 <div className="flex flex-col gap-3">
-                    <div className="flex flex-row items-center gap-2">
+                    <div className="flex flex-row items-center gap-2 px-4">
                         <History className="size-10" />
                         <h1 className="text-2xl font-bold">Submission history</h1>
                     </div>
-                    <div className="grid grid-cols-1 gap-2">{
+                    <div className="grid grid-cols-1 lg:gap-2 pb-10">{
                         topic.submissions.length
                             ? topic.submissions.map((submission) =>
                                 <div
-                                    className="w-full h-fit p-5 flex flex-row items-center gap-5 border-2 hover:border-blue-300 transition-all duration-200 rounded-md group cursor-pointer"
+                                    className="w-fit lg:w-full lg:m-0 h-fit p-5 flex flex-row items-center gap-5 lg:border-2 hover:border-blue-300 transition-all duration-200 lg:rounded-md group cursor-pointer"
                                     onClick={() => navigator(`/topic/${topic.id}/submission/${submission.id}`, { viewTransition: true })}
                                 >
                                     <div className="flex flex-row items-center gap-2 text-slate-500">
@@ -117,7 +118,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                                     </> : <h1 className="text-xl font-medium group-hover:text-blue-600 transition-all duration-200">Unfinished draft</h1>}
                                     <ChevronRight className="size-0 group-hover:size-9 group-hover:text-blue-600 transition-all duration-200" />
                                 </div>)
-                            : <div className="w-full p-15 flex flex-col items-center border-2 rounded-md">
+                            : <div className="w-fit lg:w-full p-15 m-auto flex flex-col items-center border-2 rounded-md">
                                 <h1 className="text-2xl">No submission :(</h1>
                             </div>
                     }</div>

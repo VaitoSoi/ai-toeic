@@ -1,5 +1,5 @@
 import type { ReviewAnnotation, Review as ReviewType, Submission } from "@/lib/typing";
-import { BookOpen, Bug, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
+import { BookOpen, Bug, ChevronLeft, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarLoader } from "react-spinners";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
@@ -7,6 +7,8 @@ import api from "@/lib/api";
 import axios from "axios";
 import { error } from "../Toast";
 import { useNavigate } from "react-router";
+import { cn } from "@/lib/utils";
+import { Checkbox } from "../ui/checkbox";
 
 type Annotation = (
     {
@@ -28,7 +30,9 @@ function Review({ submissionId }: { submissionId: string }) {
     const [reviewId, setReviewId] = useState<string>();
     const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error">("reviewing");
     const [review, setReview] = useState<ReviewType & { submission: string }>();
-    const timer = useRef<any>(null);
+    const [currentAnnotation, setCurrentAnnotation] = useState<Annotation | null>(null);
+    const [clickToReveal, setCTR] = useState<boolean>(false);
+    const interval = useRef<any>(null);
 
     const getReviewId = useCallback(async () => {
         try {
@@ -62,7 +66,6 @@ function Review({ submissionId }: { submissionId: string }) {
         }
     }, [submissionId, navigator]);
     const getReview = useCallback(async () => {
-        console.log(reviewId);
         if (!reviewId) return;
         try {
             const response = await api.get<ReviewType>(`/review?id=${reviewId}`);
@@ -74,7 +77,7 @@ function Review({ submissionId }: { submissionId: string }) {
                 submission: submission!.submission
             });
             setStatus('done');
-            clearInterval(timer.current);
+            clearInterval(interval.current);
         } catch (err) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
@@ -87,12 +90,12 @@ function Review({ submissionId }: { submissionId: string }) {
     useEffect(() => {
         if (!reviewId) return;
         getReview();
-        timer.current = setInterval(() => void getReview(), 5000);
-        return () => clearInterval(timer.current);
+        interval.current = setInterval(() => void getReview(), 5000);
+        return () => clearInterval(interval.current);
     }, [reviewId, getReview]);
     useEffect(() => {
         if (status == "error" || status == "done" || status == "failed")
-            clearInterval(timer.current);
+            clearInterval(interval.current);
     }, [status]);
     useEffect(() => {
         if (!review) return;
@@ -166,7 +169,7 @@ function Review({ submissionId }: { submissionId: string }) {
                 </div>
                 <div className="flex flex-col items-center">
                     <h1 className="text-3xl font-bold">Reviewing</h1>
-                    <p className="text-xl">The AI is reviewing your submission based on TOEIC standards</p>
+                    <p className="text-xl px-10 text-center lg:p-0">The AI is reviewing your submission based on TOEIC standards</p>
                 </div>
                 <BarLoader width={300} />
             </div>
@@ -177,8 +180,8 @@ function Review({ submissionId }: { submissionId: string }) {
                         </div>
                         <div className="flex flex-col items-center">
                             <h1 className="text-3xl font-bold">Failed to review</h1>
-                            <p className="text-xl">AI is failed to make a review based on TOEIC standards</p>
-                            <p className="text-xl">Please submit the essay again</p>
+                            <p className="text-xl px-10 text-center lg:p-0">AI is failed to make a review</p>
+                            <p className="text-xl px-10 text-center lg:p-0">Please submit the essay again</p>
                         </div>
                     </div>
                     : status == "error"
@@ -188,8 +191,8 @@ function Review({ submissionId }: { submissionId: string }) {
                             </div>
                             <div className="flex flex-col items-center">
                                 <h1 className="text-3xl font-bold">Failed to get review</h1>
-                                <p className="text-xl">There is an error occured while fetching review</p>
-                                <p className="text-xl">Please look at the console or reload page</p>
+                                <p className="text-xl px-10 text-center lg:p-0">There is an error occured while fetching review</p>
+                                <p className="text-xl text-center lg:p-0">Please look at the console or reload page</p>
                             </div>
                         </div>
                         : <div className="m-auto flex flex-col items-center gap-5">
@@ -210,10 +213,17 @@ function Review({ submissionId }: { submissionId: string }) {
                 <h1 className="text-3xl font-bold">Loading review</h1>
                 <BarLoader width={300} />
             </div>
-            : <div className="mx-auto py-10 w-4/5 h-full flex flex-col gap-5">
-                <div className="flex flex-row gap-4 border-2 rounded-md p-5 h-fit">
-                    <div className="flex flex-col flex-1 items-center p-5">
-                        <div className="relative flex items-center justify-center w-48 h-48 mb-3">
+            : <div className="lg:mx-auto lg:py-10 w-full lg:w-4/5 h-full flex flex-col gap-5">
+                <div
+                    className="w-fit flex px-3 pt-5 lg:p-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
+                    onClick={() => navigator(`/topic/${review.topic_id}`, { viewTransition: true })}
+                >
+                    <ChevronLeft className="size-7" />
+                    <p className="text-lg">Go back to topic</p>
+                </div>
+                <div className="flex flex-col lg:flex-row gap-10 lg:gap-5 lg:border-2 rounded-md p-5 h-fit">
+                    <div className="flex flex-col flex-1 items-center lg:p-5">
+                        <div className="relative flex items-center justify-center w-48 h-48 lg:mb-3">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
                                 {/* Background Circle */}
                                 <circle
@@ -277,17 +287,41 @@ function Review({ submissionId }: { submissionId: string }) {
                         <p className={(mounted ? "opacity-100" : "opacity-0") + " text-lg overflow-y-auto transition-all duration-2000"}>{review.overall_feedback}</p>
                     </div>
                 </div>
-                <div className="p-5 border-2 rounded-md h-fit text-xl">
-                    <h1 className="font-bold text-2xl text-slate-700 uppercase">Correction</h1>
+                {clickToReveal && currentAnnotation && currentAnnotation.isAnnotation &&
+                    <div className="px-5 lg:p-5 lg:border-2 rounded-md h-fit text-xl">
+                        <h1 className="font-bold text-2xl text-slate-700 uppercase">Annotation</h1>
+                        <p className="text-green-500">{currentAnnotation.replacement}</p>
+                        <div className="w-full border-t-2" />
+                        <p><span className="font-bold">Type:</span> {currentAnnotation.type}</p>
+                        <p><span className="font-bold">Feedback:</span> {currentAnnotation.feedback}</p>
+                    </div>
+                }
+                <div className="p-5 lg:border-2 rounded-md h-fit text-xl">
+                    <div className="flex flex-row items-center">
+                        <h1 className="font-bold text-2xl text-slate-700 uppercase">Correction</h1>
+                        <label className="flex flex-row items-center ml-auto gap-2">
+                            <Checkbox
+                                className="size-5"
+                                onCheckedChange={(checked) => setCTR(!!checked)}
+                            />
+                            Click to reveal
+                        </label>
+                    </div>
                     <p>{annotations.map((annotation) => annotation.isAnnotation
                         ? <HoverCard>
-                            <HoverCardTrigger asChild><span><span className={(
-                                mounted ? (
-                                    annotation.type == "grammar" ? "bg-amber-200/50"
-                                        : annotation.type == "coherence" ? "bg-blue-200/50"
-                                            : annotation.type == "mechanics" ? "bg-red-200/50"
-                                                : "bg-green-200/50"
-                                ) : "") + " whitespace-pre-wrap transition-all ease-in-out duration-500"}>{annotation.text}</span></span></HoverCardTrigger>
+                            <HoverCardTrigger asChild><span
+                                key={annotation.key}
+                                className={cn(
+                                    mounted ? (
+                                        annotation.type == "grammar" ? "bg-amber-200/50"
+                                            : annotation.type == "coherence" ? "bg-blue-200/50"
+                                                : annotation.type == "mechanics" ? "bg-red-200/50"
+                                                    : "bg-green-200/50"
+                                    ) : "",
+                                    "whitespace-pre-wrap transition-all ease-in-out duration-500"
+                                )}
+                                onClick={() => setCurrentAnnotation(annotation)}
+                            >{annotation.text}</span></HoverCardTrigger>
                             <HoverCardContent className="w-80">
                                 <p className="text-green-500">{annotation.replacement}</p>
                                 <div className="w-full border-t-2" />
@@ -295,7 +329,7 @@ function Review({ submissionId }: { submissionId: string }) {
                                 <p><span className="font-bold">Feedback:</span> {annotation.feedback}</p>
                             </HoverCardContent>
                         </HoverCard>
-                        : <span className=" whitespace-pre-wrap">{annotation.text}</span>
+                        : <span key={annotation.key} className=" whitespace-pre-wrap">{annotation.text}</span>
                     )}</p>
                 </div>
             </div>
