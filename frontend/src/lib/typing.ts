@@ -54,7 +54,7 @@ export interface Review {
     topic_id: string
     submission_id: string
 
-    status: | "reviewing" | "failed" | "done",
+    status: "reviewing" | "failed" | "done",
 
     score_range: [number, number] | undefined
     level_achieved: number | undefined
@@ -62,6 +62,7 @@ export interface Review {
     summary_feedback: string | undefined
     detail_score: DetailScore | undefined
     annotations: ReviewAnnotation[] | undefined
+    improvement_suggestions: string[] | undefined
 
     created_at: string
 }

@@ -332,6 +332,14 @@ function Review({ submissionId }: { submissionId: string }) {
                         : <span key={annotation.key} className=" whitespace-pre-wrap">{annotation.text}</span>
                     )}</p>
                 </div>
+                {review.improvement_suggestions && review.improvement_suggestions.length &&
+                    <div className="px-5 lg:py-5 lg:border-2 rounded-md h-fit text-xl">
+                        <h1 className="font-bold text-2xl text-slate-700 uppercase">Sugesstions</h1>
+                        <ul className="px-10 list-disc">
+                            {review.improvement_suggestions?.map(val => <li>{val}</li>)}
+                        </ul>
+                    </div>
+                }
             </div>
     }</div>;
 }
