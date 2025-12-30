@@ -307,7 +307,8 @@ function Review({ submissionId }: { submissionId: string }) {
                         <label className="flex flex-row items-center ml-auto gap-2">
                             <Checkbox
                                 className="size-5"
-                                onCheckedChange={(checked) => setCTR(!!checked)}
+                                checked={clickToReveal}
+                                onCheckedChange={(checked) => { setCTR(!!checked); setCurrentAnnotation(null); }}
                             />
                             Click to reveal
                         </label>
