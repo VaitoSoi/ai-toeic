@@ -18,6 +18,7 @@ type Annotation = (
         isAnnotation: false,
     } | {
         isAnnotation: true,
+        color: string,
     } & Omit<ReviewAnnotation, "target_text" | "context_before">)
 );
 
@@ -145,6 +146,10 @@ function Review({ submissionId }: { submissionId: string }) {
                 key: `${startIndex}-${endIndex}`,
                 text: submission.slice(startIndex, endIndex),
                 isAnnotation: true,
+                color: annotation.type == "grammar" ? "bg-amber-200/50"
+                    : annotation.type == "coherence" ? "bg-blue-200/50"
+                        : annotation.type == "mechanics" ? "bg-red-200/50"
+                            : "bg-green-200/50",
                 ...annotation
             });
             lastIndex = endIndex;
@@ -308,19 +313,22 @@ function Review({ submissionId }: { submissionId: string }) {
                         </label>
                     </div>
                     <p>{annotations.map((annotation) => annotation.isAnnotation
-                        ? <HoverCard>
-                            <HoverCardTrigger asChild><span
+                        ? clickToReveal
+                            ? <span
                                 key={annotation.key}
                                 className={cn(
-                                    mounted ? (
-                                        annotation.type == "grammar" ? "bg-amber-200/50"
-                                            : annotation.type == "coherence" ? "bg-blue-200/50"
-                                                : annotation.type == "mechanics" ? "bg-red-200/50"
-                                                    : "bg-green-200/50"
-                                    ) : "",
+                                    mounted ? annotation.color : "",
                                     "whitespace-pre-wrap transition-all ease-in-out duration-500"
                                 )}
                                 onClick={() => setCurrentAnnotation(annotation)}
+                            >{annotation.text}</span>
+                            : <HoverCard>
+                                <HoverCardTrigger asChild><span
+                                    key={annotation.key}
+                                    className={cn(
+                                        mounted ? annotation.color : "",
+                                        "whitespace-pre-wrap transition-all ease-in-out duration-500"
+                                    )}
                             >{annotation.text}</span></HoverCardTrigger>
                             <HoverCardContent className="w-80">
                                 <p className="text-green-500">{annotation.replacement}</p>
