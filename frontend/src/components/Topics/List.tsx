@@ -27,7 +27,7 @@ function List() {
     return <div className="w-full h-fit p-5 lg:pl-10 flex flex-col">
         <h1 className="text-3xl font-semibold">🖊️ Essays</h1>
         <h2 className="text-xl font-normal ml-12">Select a writing section to begin your training session</h2>
-        <div className="grid lg:grid-cols-4 grid-cols-1 py-5 gap-5">
+        <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 py-5 gap-5">
             {topics
                 ? topics.map((val) => <div
                     className="min-h-65 border-2 rounded-md overflow-hidden hover:shadow-md transition-shadow duration-200 group cursor-pointer"

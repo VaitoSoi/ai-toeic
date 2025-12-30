@@ -20,7 +20,7 @@ function Statics() {
 
     useEffect(() => void getStatistics(), [getStatistics]);
 
-    return <div className="h-fit lg:h-35 py-5 px-10 grid grid-cols-1 lg:grid-cols-4 gap-5">{
+    return <div className="h-fit lg:h-35 py-5 px-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">{
         statistics
             ? <>
                 {[
@@ -44,8 +44,8 @@ function Statics() {
             : <>
                 <Skeleton className="h-full w-full" />
                 <Skeleton className="h-full w-full" />
-                <Skeleton className="h-full w-full" />
-                <Skeleton className="h-full w-full" />
+                <Skeleton className="h-full w-full hidden lg:flex" />
+                <Skeleton className="h-full w-full hidden lg:flex" />
             </>
     }</div>;
 }

@@ -163,7 +163,7 @@ function Review({ submissionId }: { submissionId: string }) {
         return annotations;
     }, [review]);
 
-    return <div className="w-full flex flex-1 min-h-0 overflow-auto">{
+    return <div className="w-full h-fit flex flex-1 min-h-0 overflow-auto">{
         status != "done" ? (
             status == "reviewing" ? <div className="m-auto flex flex-col items-center gap-5">
                 <div className="relative">
@@ -218,15 +218,15 @@ function Review({ submissionId }: { submissionId: string }) {
                 <h1 className="text-3xl font-bold">Loading review</h1>
                 <BarLoader width={300} />
             </div>
-            : <div className="lg:mx-auto lg:py-10 w-full lg:w-4/5 h-full flex flex-col gap-5">
+            : <div className="lg:mx-auto my-5 lg:my-10 w-full lg:w-4/5 h-fit flex flex-col gap-5">
                 <div
-                    className="w-fit flex px-3 pt-5 lg:p-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
+                    className="w-fit flex px-3 lg:p-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
                     onClick={() => navigator(`/topic/${review.topic_id}`, { viewTransition: true })}
                 >
                     <ChevronLeft className="size-7" />
                     <p className="text-lg">Go back to topic</p>
                 </div>
-                <div className="flex flex-col lg:flex-row gap-10 lg:gap-5 lg:border-2 rounded-md p-5 h-fit">
+                <div className="flex flex-col lg:py-5 lg:flex-row gap-5 lg:gap-5 lg:border-2 rounded-md px-5 h-fit">
                     <div className="flex flex-col flex-1 items-center lg:p-5">
                         <div className="relative flex items-center justify-center w-48 h-48 lg:mb-3">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
@@ -293,7 +293,7 @@ function Review({ submissionId }: { submissionId: string }) {
                     </div>
                 </div>
                 {clickToReveal && currentAnnotation && currentAnnotation.isAnnotation &&
-                    <div className="px-5 lg:p-5 lg:border-2 rounded-md h-fit text-xl">
+                    <div className="px-5 lg:py-5 lg:border-2 rounded-md h-fit text-xl">
                         <h1 className="font-bold text-2xl text-slate-700 uppercase">Annotation</h1>
                         <p className="text-green-500">{currentAnnotation.replacement}</p>
                         <div className="w-full border-t-2" />
@@ -301,7 +301,7 @@ function Review({ submissionId }: { submissionId: string }) {
                         <p><span className="font-bold">Feedback:</span> {currentAnnotation.feedback}</p>
                     </div>
                 }
-                <div className="p-5 lg:border-2 rounded-md h-fit text-xl">
+                <div className="px-5 lg:py-5 lg:border-2 rounded-md h-fit text-xl">
                     <div className="flex flex-row items-center">
                         <h1 className="font-bold text-2xl text-slate-700 uppercase">Correction</h1>
                         <label className="flex flex-row items-center ml-auto gap-2">
@@ -330,14 +330,14 @@ function Review({ submissionId }: { submissionId: string }) {
                                         mounted ? annotation.color : "",
                                         "whitespace-pre-wrap transition-all ease-in-out duration-500"
                                     )}
-                            >{annotation.text}</span></HoverCardTrigger>
-                            <HoverCardContent className="w-80">
-                                <p className="text-green-500">{annotation.replacement}</p>
-                                <div className="w-full border-t-2" />
-                                <p><span className="font-bold">Type:</span> {annotation.type}</p>
-                                <p><span className="font-bold">Feedback:</span> {annotation.feedback}</p>
-                            </HoverCardContent>
-                        </HoverCard>
+                                >{annotation.text}</span></HoverCardTrigger>
+                                <HoverCardContent className="w-80">
+                                    <p className="text-green-500">{annotation.replacement}</p>
+                                    <div className="w-full border-t-2" />
+                                    <p><span className="font-bold">Type:</span> {annotation.type}</p>
+                                    <p><span className="font-bold">Feedback:</span> {annotation.feedback}</p>
+                                </HoverCardContent>
+                            </HoverCard>
                         : <span key={annotation.key} className=" whitespace-pre-wrap">{annotation.text}</span>
                     )}</p>
                 </div>
