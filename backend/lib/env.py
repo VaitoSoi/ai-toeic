@@ -6,7 +6,7 @@ dotenv.load_dotenv()
 
 DB_URL = os.getenv("DB_URL", "sqlite+aiosqlite:///data/db.sqlite")
 
-OPENROUTER_URL = os.getenv("OPENROUTER_URL", "https://ai.hackclub.com/proxy/v1")
+OPENROUTER_URL = os.getenv("OPENROUTER_URL", "https://ai.hackclub.com/")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not OPENROUTER_API_KEY:
     raise ValueError("no api key in env")
