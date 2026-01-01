@@ -1,3 +1,4 @@
+import traceback
 from asyncio import (
     AbstractEventLoop,
     Task,
@@ -32,6 +33,11 @@ def _done_callback(
     event_loop: AbstractEventLoop | None,
 ):
     def _inner(task: Task[T]):
+        if (task.exception()):
+            print("".join(traceback.format_exception(task.exception())))
+            if callback and event_loop:
+                run_coroutine_threadsafe(coro=callback(id, False, None), loop=event_loop)
+            return
         del tasks[id]
         if callback and event_loop:
             try:
