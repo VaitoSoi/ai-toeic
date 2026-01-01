@@ -36,7 +36,7 @@ function List() {
                     <div className="w-full h-2" />
                     <div className="p-6 flex flex-col gap-3">
                         <val.icon strokeWidth={2} className={`size-15 p-2 bg-slate-300/30 rounded-md`} />
-                        <h2 className="text-2xl font-bold group-hover:text-blue-500 transition-colors duration-200">{reduceWords(val.summary?.summary || "Some title here", 25)}</h2>
+                        <h2 className="text-2xl font-bold group-hover:text-blue-500 transition-colors duration-200">{reduceWords(val.summary?.summary || "No title", 25)}</h2>
                         <p className="text-lg font-normal text-slate-700">{val.summary?.description}</p>
                     </div>
                 </div>)
