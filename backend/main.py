@@ -6,14 +6,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from lib.db import init
+from lib.ai import init as ai_init
+from lib.db import init as db_init
 from lib.task import shutdown
 from route import review_route, statics_route, submission_route, topic_route
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init()
+    ai_init()
+    await db_init()
     yield
     await shutdown(10)
 
