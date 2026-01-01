@@ -1,6 +1,6 @@
 from asyncio import get_event_loop
 from datetime import datetime
-from enum import Enum
+from enum import Enum as PyEnum
 from traceback import format_exc
 from typing import Awaitable, Callable, Literal, Optional, TypeVar, cast
 from uuid import uuid4
@@ -16,7 +16,8 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import (
     JSON,
     Column,
-    Field,
+    Enum as SQLEnum,
+    Field as SQLField,
     Relationship,
     SQLModel,
     desc,
@@ -28,7 +29,7 @@ from .ai import (
     DetailScore,
     ReviewResponse,
     SummaryResponse,
-    generate_topic,
+    generate_topic_p2_3,
     review as ai_review,
     summary,
 )
@@ -38,62 +39,103 @@ from .task import add_task
 from .util import PydanticJSON, PydanticListJSON
 
 
-class TopicType(Enum):
+class Status(PyEnum):
+    pending = "pending"
+    failed = "failed"
+    done = "done"
+
+
+class TopicType(PyEnum):
     writing = "writing"
 
 
-class TopicPart(Enum):
+class TopicPart(PyEnum):
+    I = "1"  # noqa: E741
     II = "2"
     III = "3"
 
 
 class Topic(SQLModel, table=True):
-    __tablename__ = "topic"  # type: ignore
+    __tablename__ = "topic"  # pyright: ignore[reportAssignmentType]
 
-    id: str = Field(primary_key=True, default_factory=lambda: uuid4().__str__())
+    id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
-    type: TopicType = Field(default=TopicType.writing)
-    part: TopicPart
-    question: str
-    summary: Optional[SummaryResponse] = Field(
+    status: Status = SQLField(sa_column=Column(SQLEnum(Status)))
+
+    type: TopicType = SQLField(
+        default=TopicType.writing, sa_column=Column(SQLEnum(TopicType))
+    )
+    part: TopicPart = SQLField(sa_column=Column(SQLEnum(TopicPart)))
+
+    question: Optional[str] = SQLField(default=None)  # Part 2 & 3
+    question_set: Optional[list["TopicQuestion"]] = Relationship(
+        back_populates="topic"
+    )  # Part 1
+
+    summary: Optional[SummaryResponse] = SQLField(
         default=None, sa_type=PydanticJSON(SummaryResponse)
     )
 
     submissions: list["Submission"] = Relationship(back_populates="topic")
     reviews: list["Review"] = Relationship(back_populates="topic")
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now())
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now())
+
+
+class TopicQuestion(SQLModel, table=True):
+    __tablename__ = "topic_question"  # pyright: ignore[reportAssignmentType]
+
+    id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
+
+    topic_id: str = SQLField(foreign_key="topic.id")
+    topic: Topic = Relationship(back_populates="question_set")
+
+    artist_prompt: str
+    file: str
+    keywords: tuple[str, str] = SQLField(sa_column=Column(JSON))
+
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
 class SlicedTopic(BaseModel):
     id: str
 
+    status: Status
+
     type: TopicType
     part: TopicPart
-    question: str
-    summary: Optional[SummaryResponse]
 
-    submissions: list["BaseSubmission"] = PydanticField(default=[])
+    question: Optional[str]
+    question_set: Optional[list["SlicedTopicQuestion"]]
+
+    submissions: list["SlicedSubmission"] = PydanticField(default=[])
     reviews: list["SlicedReview"] = PydanticField(default=[])
+
+    summary: Optional[SummaryResponse]
 
     created_at: datetime
 
 
-class BaseSubmission(SQLModel, table=False):
+class SlicedTopicQuestion(BaseModel):
     id: str
     topic_id: str
-    submission: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now())
+    artist_prompt: str
+    file: str
+    keywords: tuple[str, str]
+    created_at: datetime
 
 
-class Submission(BaseSubmission, table=True):
+class Submission(SQLModel, table=True):
     __tablename__ = "submission"  # type: ignore
-    id: str = Field(primary_key=True, default_factory=lambda: uuid4().__str__())
+    id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
+    topic_id: str
+    submission: str
 
-    topic_id: str = Field(foreign_key="topic.id", ondelete="CASCADE")
+    topic_id: str = SQLField(foreign_key="topic.id", ondelete="CASCADE")
     topic: Topic = Relationship(back_populates="submissions")
 
     review: Optional["Review"] = Relationship(back_populates="submission")
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
 class SlicedSubmission(BaseModel):
@@ -104,40 +146,36 @@ class SlicedSubmission(BaseModel):
     created_at: datetime
 
 
-class ReviewStatus(Enum):
-    reviewing = "reviewing"
-    failed = "failed"
-    done = "done"
-
-
 class Review(SQLModel, table=True):
     __tablename__ = "review"  # type: ignore
 
-    id: str = Field(primary_key=True, default_factory=lambda: uuid4().__str__())
+    id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
-    topic_id: str = Field(foreign_key="topic.id", ondelete="CASCADE")
+    topic_id: str = SQLField(foreign_key="topic.id", ondelete="CASCADE")
     topic: Topic = Relationship(back_populates="reviews")
 
-    submission_id: str = Field(foreign_key="submission.id", ondelete="CASCADE")
+    submission_id: str = SQLField(foreign_key="submission.id", ondelete="CASCADE")
     submission: Submission = Relationship(back_populates="review")
 
-    status: ReviewStatus
+    status: Status
 
-    score_range: Optional[tuple[int, int]] = Field(default=None, sa_column=Column(JSON))
-    level_achieved: Optional[int] = Field(default=None)
-    overall_feedback: Optional[str] = Field(default=None)
-    summary_feedback: Optional[str] = Field(default=None)
-    detail_score: Optional[DetailScore] = Field(
+    score_range: Optional[tuple[int, int]] = SQLField(
+        default=None, sa_column=Column(JSON)
+    )
+    level_achieved: Optional[int] = SQLField(default=None)
+    overall_feedback: Optional[str] = SQLField(default=None)
+    summary_feedback: Optional[str] = SQLField(default=None)
+    detail_score: Optional[DetailScore] = SQLField(
         default=None, sa_type=PydanticJSON(DetailScore)
     )
-    annotations: Optional[list[Annotation]] = Field(
+    annotations: Optional[list[Annotation]] = SQLField(
         default=None, sa_type=PydanticListJSON(Annotation)
     )
-    improvement_suggestions: Optional[list[str]] = Field(
+    improvement_suggestions: Optional[list[str]] = SQLField(
         default=None, sa_column=Column(JSON)
     )
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now())
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
 class SlicedReview(BaseModel):
@@ -146,7 +184,7 @@ class SlicedReview(BaseModel):
     topic_id: str
     submission_id: str
 
-    status: ReviewStatus
+    status: Status
 
     score_range: Optional[tuple[int, int]] = PydanticField(default=None)
     level_achieved: Optional[int] = PydanticField(default=None)
@@ -162,12 +200,12 @@ class SlicedReview(BaseModel):
 class Session(SQLModel, table=True):
     __tablename__ = "session"  # type: ignore
 
-    id: str = Field(primary_key=True, default_factory=lambda: uuid4().__str__())
+    id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
     started_at: datetime
     ended_at: datetime
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now())
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
 class Statistics(BaseModel):
@@ -214,24 +252,73 @@ async def get_session():
 
 
 """
-TOPIC
+Formater
 """
 
 
 def format_topic(topic: Topic):
     return SlicedTopic(
         id=topic.id,
+        status=topic.status,
         type=topic.type,
         part=topic.part,
-        question=topic.question,
         summary=topic.summary,
-        submissions=[BaseSubmission(**sub.model_dump()) for sub in topic.submissions],
-        reviews=[SlicedReview(**review.model_dump()) for review in topic.reviews],
+        question=topic.question,
+        question_set=[
+            format_topic_question(question) for question in topic.question_set
+        ]
+        if topic.question_set
+        else None,
+        submissions=[format_submission(sub) for sub in topic.submissions],
+        reviews=[format_review(review) for review in topic.reviews],
         created_at=topic.created_at,
     )
 
 
-async def get_topics(_session: AsyncSession | None = None):
+def format_topic_question(question: TopicQuestion):
+    return SlicedTopicQuestion(
+        id=question.id,
+        topic_id=question.topic_id,
+        artist_prompt=question.artist_prompt,
+        file=question.file,
+        keywords=question.keywords,
+        created_at=question.created_at,
+    )
+
+
+def format_submission(submission: Submission):
+    return SlicedSubmission(
+        id=submission.id,
+        topic_id=submission.topic_id,
+        submission=submission.submission,
+        review=format_review(submission.review) if submission.review else None,
+        created_at=submission.created_at,
+    )
+
+
+def format_review(review: Review):
+    return SlicedReview(
+        id=review.id,
+        topic_id=review.topic_id,
+        submission_id=review.submission_id,
+        status=review.status,
+        score_range=review.score_range,
+        level_achieved=review.level_achieved,
+        overall_feedback=review.overall_feedback,
+        summary_feedback=review.summary_feedback,
+        detail_score=review.detail_score,
+        annotations=review.annotations,
+        improvement_suggestions=review.improvement_suggestions,
+        created_at=review.created_at,
+    )
+
+
+"""
+TOPIC
+"""
+
+
+async def get_topics(all: bool = False, _session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
         statement = (
             select(Topic)
@@ -239,8 +326,11 @@ async def get_topics(_session: AsyncSession | None = None):
             .options(
                 selectinload(Topic.submissions),  # type: ignore
                 selectinload(Topic.reviews),  # type: ignore
+                selectinload(Topic.question_set),  # type: ignore
             )
         )
+        if not all:
+            statement = statement.where(Topic.status == Status.done)
         topics = list((await session.execute(statement)).scalars().all())
         return [format_topic(topic) for topic in topics]
 
@@ -256,6 +346,7 @@ async def _get_topic(id: str, _session: AsyncSession | None = None):
             .options(
                 selectinload(Topic.submissions),  # type: ignore
                 selectinload(Topic.reviews),  # type: ignore
+                selectinload(Topic.question_set),  # type: ignore
             )
         )
         topic = (await session.execute(statement)).scalar()
@@ -273,19 +364,51 @@ async def get_topic(id: str, _session: AsyncSession | None = None):
 
 
 async def create_topic(
-    part: Literal["2"] | Literal["3"], _session: AsyncSession | None = None
+    part: Literal["1", "2", "3"], _session: AsyncSession | None = None
 ):
-    question = await generate_topic(part)
-
     async def _inner(session: AsyncSession):
-        topic = Topic(
-            part=TopicPart.II if part == "2" else TopicPart.III,
-            question=question,
-            summary=await summary(question),
-        )
-        session.add(topic)
-        await session.commit()
-        return format_topic(topic)
+        
+        if part == "2" or part == "3":
+            async def update_topic(id: str, status: bool, response: str | None):
+                try:
+                    task, topic_id = id.split(":")
+                    if task != "topic_2_3":
+                        return
+
+                    async def _update_inner(update_session: AsyncSession):
+                        topic = await _get_topic(topic_id, update_session)
+                        if not status or response is None:
+                            topic.status = Status.failed
+                        else:
+                            topic.status = Status.done
+                            topic.question = response
+                            topic.summary = await summary(response)
+                        update_session.add(topic)
+                        await update_session.commit()
+
+                    await create_session_and_run(_update_inner)
+                except Exception:
+                    print(format_exc())
+
+            id = uuid4().__str__()
+            topic = Topic(
+                id=id,
+                status=Status.pending,
+                part=TopicPart.II if part == "2" else TopicPart.III,
+            )
+            add_task(
+                generate_topic_p2_3(part=cast(Literal["2", "3"], topic.part.value)),
+                f"topic_2_3:{id}",
+                callback=update_topic,
+                event_loop=get_event_loop(),
+            )
+            session.add(topic)
+            await session.commit()
+            
+            # Reload the topic with relationships to avoid lazy loading issues
+            # The MissingGreenLet
+            saved_topic = await _get_topic(topic.id, session)
+            return format_topic(saved_topic)
 
     return await create_session_and_run(_inner, _session)
 
@@ -302,18 +425,6 @@ async def delete_topic(id: str, _session: AsyncSession | None = None):
 """
 SUBMISSION
 """
-
-
-def format_submission(submission: Submission):
-    return SlicedSubmission(
-        id=submission.id,
-        topic_id=submission.topic_id,
-        submission=submission.submission,
-        review=SlicedReview(**submission.review.model_dump())
-        if submission.review
-        else None,
-        created_at=submission.created_at,
-    )
 
 
 async def get_submissions(_session: AsyncSession | None = None):
@@ -395,23 +506,6 @@ REVIEW
 """
 
 
-def format_review(review: Review):
-    return SlicedReview(
-        id=review.id,
-        topic_id=review.topic_id,
-        submission_id=review.submission_id,
-        status=review.status,
-        score_range=review.score_range,
-        level_achieved=review.level_achieved,
-        overall_feedback=review.overall_feedback,
-        summary_feedback=review.summary_feedback,
-        detail_score=review.detail_score,
-        annotations=review.annotations,
-        improvement_suggestions=review.improvement_suggestions,
-        created_at=review.created_at,
-    )
-
-
 async def get_reviews(_session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
         statement = select(Review).order_by(desc(Review.created_at))
@@ -473,9 +567,9 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
                 async def _update_inner(update_session: AsyncSession):
                     review = await _get_review(review_id, update_session)
                     if not status or response is None:
-                        review.status = ReviewStatus.failed
+                        review.status = Status.failed
                     else:
-                        review.status = ReviewStatus.done
+                        review.status = Status.done
                         review.score_range = response.score_range
                         review.level_achieved = response.level_achieved
                         review.overall_feedback = response.overall_feedback
@@ -496,7 +590,7 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
         add_task(
             ai_review(
                 part=topic.part.value,
-                topic=topic.question,
+                topic=cast(str, topic.question),
                 submission=submission.submission,
             ),
             f"review:{id}",
@@ -507,7 +601,7 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
             id=id,
             submission_id=submission.id,
             topic_id=topic.id,
-            status=ReviewStatus.reviewing,
+            status=Status.pending,
         )
         session.add(review_obj)
         await session.commit()
