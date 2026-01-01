@@ -11,7 +11,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not OPENROUTER_API_KEY:
     raise ValueError("no api key in env")
 
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "google/gemini-2.5-flash")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "google/gemini-3-flash-preview")
 QUESTION_MODEL = os.getenv("QUESTION_MODEL", DEFAULT_MODEL)
 REVIEW_MODEL = os.getenv("REVIEW_MODEL", DEFAULT_MODEL)
 SUMMARY_MODEL = os.getenv("SUMMARY_MODEL", DEFAULT_MODEL)
