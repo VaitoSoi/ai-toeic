@@ -11,17 +11,33 @@ export interface Summary {
     description: string
 }
 
+export type Status = "pending" | "failed" | "done";
+
 export interface Topic {
     id: string
 
+    status: Status
+
     type: "writing"
     part: "2" | "3"
-    question: string
+
+    question?: string
+    question_set?: TopicQuestion[]
+
     summary?: Summary
     created_at: string
 
     submissions: Submission[]
     reviews: Review[]
+}
+
+export interface TopicQuestion {
+    id: string
+    topic_id: string
+    artist_prompt: string
+    file: string
+    keywords: [string, string]
+    created_at: string
 }
 
 export interface Submission {
@@ -37,7 +53,7 @@ export interface ReviewAnnotation {
     target_text: string
     context_before: string
     type: "grammar" | "vocabulary" | "coherence" | "mechanics"
-    replacement: string | undefined
+    replacement?: string
     feedback: string
 }
 
@@ -54,15 +70,15 @@ export interface Review {
     topic_id: string
     submission_id: string
 
-    status: "reviewing" | "failed" | "done",
+    status: Status,
 
-    score_range: [number, number] | undefined
-    level_achieved: number | undefined
-    overall_feedback: string | undefined
-    summary_feedback: string | undefined
-    detail_score: DetailScore | undefined
-    annotations: ReviewAnnotation[] | undefined
-    improvement_suggestions: string[] | undefined
+    score_range?: [number, number]
+    level_achieved?: number
+    overall_feedback?: string
+    summary_feedback?: string
+    detail_score?: DetailScore
+    annotations?: ReviewAnnotation[]
+    improvement_suggestions?: string[]
 
     created_at: string
 }
