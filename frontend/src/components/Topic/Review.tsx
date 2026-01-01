@@ -70,7 +70,7 @@ function Review({ submissionId }: { submissionId: string }) {
         if (!reviewId) return;
         try {
             const response = await api.get<ReviewType>(`/review?id=${reviewId}`);
-            if (response.data.status == "reviewing")
+            if (response.data.status == "pending")
                 return setStatus("reviewing");
             const submission = await getSubmission();
             setReview({
