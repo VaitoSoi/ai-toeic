@@ -24,8 +24,8 @@ async def api_get_topic(id: str):
 
 @route.post("", description="Request a topic")
 @exception_handler
-async def api_create_topic(part: Literal["2"] | Literal["3"]):
-    return await create_topic(part)
+async def api_create_topic(part: Literal["1", "2", "3"], p1_count: int = 5):
+    return await create_topic(part=part, p1_count=p1_count)
 
 @route.delete("", description="Delete a topic")
 @exception_handler
