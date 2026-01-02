@@ -60,7 +60,7 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
             const response = await api.post<Submission>(`/submission?topic_id=${topic.id}`, { submission: text });
             await api.post(`/review?submission_id=${response.data.id}`);
             setSubmissionStatus("sent");
-            setTimeout(() => navigator(`/topic/${topic.id}/submission/${response.data.id}`));
+            setTimeout(() => navigator(`/topic/${topic.id}/submission/${response.data.id}`), 5000);
         } catch (err) {
             console.error(err);
         }
