@@ -5,10 +5,10 @@ description = "Backend for AI TOEIC"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "aiofiles>=25.1.0",
     "aiohttp[speedups]>=3.13.2",
     "aiosqlite>=0.21.0",
     "fastapi[standard]>=0.123.5",
-    "openrouter>=0.0.19",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
     "ruff>=0.14.8",
