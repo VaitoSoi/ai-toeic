@@ -1,10 +1,13 @@
-from asyncio import get_event_loop
+import base64
+import re
+from asyncio import Task, create_task, gather, get_event_loop
 from datetime import datetime
 from enum import Enum as PyEnum
 from traceback import format_exc
-from typing import Awaitable, Callable, Literal, Optional, TypeVar, cast
+from typing import Any, Awaitable, Callable, Coroutine, Literal, Optional, TypeVar, cast
 from uuid import uuid4
 
+from aiofiles import open
 from pydantic import BaseModel, Field as PydanticField
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
@@ -27,11 +30,14 @@ from sqlmodel import (
 from .ai import (
     Annotation,
     DetailScore,
+    P1Response,
+    P2Response,
+    P3Response,
     ReviewResponse,
-    SummaryResponse,
-    generate_topic_p2_3,
+    Summary,
+    generate_image,
+    generate_topic,
     review as ai_review,
-    summary,
 )
 from .env import DB_URL
 from .exception import ReviewNotFound, SubmissionNotFound, TopicNotFound
@@ -72,9 +78,7 @@ class Topic(SQLModel, table=True):
         back_populates="topic"
     )  # Part 1
 
-    summary: Optional[SummaryResponse] = SQLField(
-        default=None, sa_type=PydanticJSON(SummaryResponse)
-    )
+    summary: Optional[Summary] = SQLField(default=None, sa_type=PydanticJSON(Summary))
 
     submissions: list["Submission"] = Relationship(back_populates="topic")
     reviews: list["Review"] = Relationship(back_populates="topic")
@@ -111,7 +115,7 @@ class SlicedTopic(BaseModel):
     submissions: list["SlicedSubmission"] = PydanticField(default=[])
     reviews: list["SlicedReview"] = PydanticField(default=[])
 
-    summary: Optional[SummaryResponse]
+    summary: Optional[Summary]
 
     created_at: datetime
 
@@ -264,9 +268,7 @@ def format_topic(topic: Topic):
         part=topic.part,
         summary=topic.summary,
         question=topic.question,
-        question_set=[
-            format_topic_question(question) for question in topic.question_set
-        ]
+        question_set=[format_topic_question(question) for question in topic.question_set]
         if topic.question_set
         else None,
         submissions=[format_submission(sub) for sub in topic.submissions],
@@ -363,33 +365,159 @@ async def get_topic(id: str, _session: AsyncSession | None = None):
     return format_topic(topic)
 
 
+class CombinedP1Response(BaseModel):
+    prompt: str
+    keywords: tuple[str, str]
+    image_url: str
+
+
+BASE64_IMAGE_REGEX = re.compile(r"^data:image\/([a-z]+);base64,(.+)")
+
+
+async def _create_question_p1():
+    prompt_response = cast(P1Response, await generate_topic("1"))
+    if prompt_response is None:
+        raise RuntimeError("can't generate prompt for image generation")
+
+    image_url = await generate_image(prompt=prompt_response.artist_prompt)
+    if image_url is None:
+        raise RuntimeError("can't generate image")
+
+    return CombinedP1Response(
+        prompt=prompt_response.artist_prompt,
+        keywords=prompt_response.keywords,
+        image_url=image_url,
+    )
+
+
+async def _create_topic_p1(count: int = 1):
+    tasks: list[Task[CombinedP1Response]] = []
+    for _ in range(count):
+        tasks.append(create_task(_create_question_p1()))
+
+    return await gather(*tasks)
+
+
+async def _update_topic_p1(
+    id: str, status: bool, responses: list[CombinedP1Response] | None
+):
+    try:
+        task, topic_id = id.split(":")
+        if task != "topic_1":
+            return
+
+        async def _update_inner(update_session: AsyncSession):
+            topic = await _get_topic(topic_id, update_session)
+            if not status or responses is None:
+                topic.status = Status.failed
+
+            else:
+                question_set: list[TopicQuestion] = []
+                for response in responses:
+                    image_id = uuid4().__str__()
+                    image_ext, image_data = cast(
+                        tuple[str, str],
+                        re.findall(BASE64_IMAGE_REGEX, response.image_url)[0],
+                    )
+
+                    filename = f"{image_id}.{image_ext}"
+                    async with open(f"data/image/{filename}", "wb") as file:
+                        await file.write(base64.b64decode(image_data))
+
+                    question = TopicQuestion(
+                        topic_id=topic.id,
+                        artist_prompt=response.prompt,
+                        keywords=response.keywords,
+                        file=filename,
+                    )
+                    question_set.append(question)
+
+                topic.status = Status.done
+
+                update_session.add_all([topic, *question_set])
+                await update_session.commit()
+
+        await create_session_and_run(_update_inner)
+
+    except Exception:
+        print(format_exc())
+
+
+async def _update_topic_p2_3(
+    id: str, status: bool, response: P2Response | P3Response | None
+):
+    try:
+        task, topic_id = id.split(":")
+        if task != "topic_2_3":
+            return
+
+        async def _update_inner(update_session: AsyncSession):
+            topic = await _get_topic(topic_id, update_session)
+            if not status or response is None:
+                topic.status = Status.failed
+            else:
+                question: str
+                if isinstance(response, P2Response):
+                    content = response.test_content
+                    question = (
+                        f"**From:** {content.email_header.from_}\n"
+                        + f"**To:** {content.email_header.to}\n"
+                        + f"**Subject:** {content.email_header.subject}\n"
+                        + f"**Sent:** {content.email_header.sent}\n"
+                        + "\n"
+                        + f"{content.email_body}\n"
+                        + "\n"
+                        + f"**Direction:** {content.direction}"
+                    )
+                elif isinstance(response, P3Response):
+                    content = response.test_content
+                    question = (
+                        "**Directions:** Read the question below. "
+                        + "You will have 30 minutes to plan, write, and revise your essay. "
+                        + "Typically, an effective essay will contain a minimum of 300 words.\n"
+                        + "\n"
+                        + f"{content.context_statement}\n"
+                        + f"{content.question_prompt}"
+                    )
+
+                print(question)
+
+                topic.status = Status.done
+                topic.summary = response.information
+                topic.question = question
+
+            update_session.add(topic)
+            await update_session.commit()
+
+        await create_session_and_run(_update_inner)
+
+    except Exception:
+        print(format_exc())
+
+
 async def create_topic(
-    part: Literal["1", "2", "3"], _session: AsyncSession | None = None
+    part: Literal["1", "2", "3"],
+    p1_count: int = 5,
+    _session: AsyncSession | None = None,
 ):
     async def _inner(session: AsyncSession):
-        
-        if part == "2" or part == "3":
-            async def update_topic(id: str, status: bool, response: str | None):
-                try:
-                    task, topic_id = id.split(":")
-                    if task != "topic_2_3":
-                        return
+        topic: Topic
 
-                    async def _update_inner(update_session: AsyncSession):
-                        topic = await _get_topic(topic_id, update_session)
-                        if not status or response is None:
-                            topic.status = Status.failed
-                        else:
-                            topic.status = Status.done
-                            topic.question = response
-                            topic.summary = await summary(response)
-                        update_session.add(topic)
-                        await update_session.commit()
+        if part == "1":
+            id = uuid4().__str__()
+            topic = Topic(
+                id=id,
+                status=Status.pending,
+                part=TopicPart.I,
+            )
+            add_task(
+                _create_topic_p1(count=p1_count),
+                f"topic_1:{id}",
+                callback=_update_topic_p1,
+                event_loop=get_event_loop(),
+            )
 
-                    await create_session_and_run(_update_inner)
-                except Exception:
-                    print(format_exc())
-
+        elif part == "2" or part == "3":
             id = uuid4().__str__()
             topic = Topic(
                 id=id,
@@ -397,18 +525,19 @@ async def create_topic(
                 part=TopicPart.II if part == "2" else TopicPart.III,
             )
             add_task(
-                generate_topic_p2_3(part=cast(Literal["2", "3"], topic.part.value)),
+                cast(
+                    Coroutine[Any, Any, P2Response | P3Response | None],
+                    generate_topic(part=part),
+                ),
                 f"topic_2_3:{id}",
-                callback=update_topic,
+                callback=_update_topic_p2_3,
                 event_loop=get_event_loop(),
             )
-            session.add(topic)
-            await session.commit()
-            
-            # Reload the topic with relationships to avoid lazy loading issues
-            # The MissingGreenLet
-            saved_topic = await _get_topic(topic.id, session)
-            return format_topic(saved_topic)
+        session.add(topic)
+        await session.commit()
+
+        saved_topic = await _get_topic(topic.id, session)
+        return format_topic(saved_topic)
 
     return await create_session_and_run(_inner, _session)
 
@@ -576,9 +705,7 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
                         review.summary_feedback = response.summary_feedback
                         review.detail_score = response.detail_score
                         review.annotations = response.annotations
-                        review.improvement_suggestions = (
-                            response.improvement_suggestions
-                        )
+                        review.improvement_suggestions = response.improvement_suggestions
                     update_session.add(review)
                     await update_session.commit()
 
@@ -638,9 +765,7 @@ async def add_session(
 
 async def statistics():
     async def _inner(session: AsyncSession):
-        reviews = filter(
-            lambda x: x.score_range is not None, await get_reviews(session)
-        )
+        reviews = filter(lambda x: x.score_range is not None, await get_reviews(session))
 
         mid_points: list[float] = []
         for review in reviews:
@@ -656,10 +781,7 @@ async def statistics():
 
         sessions = await get_sessions(session)
         total_time = sum(
-            [
-                (session.started_at - session.ended_at).microseconds
-                for session in sessions
-            ]
+            [(session.started_at - session.ended_at).microseconds for session in sessions]
         )
 
         submissions = await get_submissions(session)

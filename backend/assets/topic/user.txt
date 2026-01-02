@@ -1,5 +1,13 @@
 ### TOEIC TOPIC GENERATION REQUEST
 
-**ACTION:** Generate a realistic TOEIC Writing topic.
+**ACTION:** Generate a realistic TOEIC Writing topic based on the provided parameters.
 
 **PART:** {part}
+
+**SUGGESTED THEME ELEMENTS:**
+{theme}
+
+**LOGIC OVERRIDE INSTRUCTION:**
+The "Suggested Theme Elements" above are procedurally generated and may occasionally create illogical combinations (e.g., "A pilot cooking in a library").
+- **IF** the combination makes sense: Use it exactly as provided.
+- **IF** the combination is illogical or physically impossible: You have permission to **modify** the Action or Setting to align with the Subject, ensuring a realistic workplace or daily life scenario.
