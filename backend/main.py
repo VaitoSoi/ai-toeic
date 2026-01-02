@@ -32,6 +32,10 @@ api_router.include_router(statics_route)
 api_router.include_router(submission_route)
 api_router.include_router(topic_route)
 
+if not os.path.exists("data/image"):
+    os.mkdir("data/image")
+app.mount("/file", StaticFiles(directory="data/image"))
+
 ENV = os.getenv("ENV", "DEV")
 if ENV == "PROD":
     app.include_router(api_router, prefix="/api")
