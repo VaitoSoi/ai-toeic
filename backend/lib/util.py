@@ -52,3 +52,13 @@ class PydanticListJSON(TypeDecorator):
         if value is None:
             return None
         return cast(list[T], [self.pydantic_model.model_validate(item) for item in value])
+
+base_colors: list[str] = []
+with open("assets/colors.txt", "rt") as file:
+    base_colors = file.read().split("\n")
+
+colors: list[str] = []
+for color in base_colors:
+    for shade in range(200, 801, 100):
+        colors.append(f"{color}-{shade}")
+
