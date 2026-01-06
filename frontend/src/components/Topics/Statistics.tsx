@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Statistics } from "@/lib/typing";
-import api from "@/lib/api";
 import { Skeleton } from "../ui/skeleton";
 import ms from "ms";
 import { ChartNoAxesCombined, Clock, FileText, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiStatistic, type Statistics } from "@/api";
 
 function Statics() {
     const [statistics, setStatistics] = useState<Statistics>();
 
     const getStatistics = useCallback(async () => {
         try {
-            const response = await api.get<Statistics>("/statistics/");
+            const response = await apiStatistic();
             setStatistics(response.data);
         } catch (error) {
             console.error(error);

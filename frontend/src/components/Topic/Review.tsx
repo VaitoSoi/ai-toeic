@@ -1,9 +1,8 @@
-import type { ReviewAnnotation, Review as ReviewType, Submission } from "@/lib/typing";
 import { BookOpen, Bug, ChevronLeft, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarLoader } from "react-spinners";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
-import api from "@/lib/api";
+import { apiGetReview, apiGetReviewOf, apiGetSubmission, apiRequestReview, type Annotation as ReviewAnnotation, type SlicedReview } from "@/api";
 import axios from "axios";
 import { error } from "../Toast";
 import { useNavigate } from "react-router";
@@ -30,14 +29,14 @@ function Review({ submissionId }: { submissionId: string }) {
 
     const [reviewId, setReviewId] = useState<string>();
     const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error">("reviewing");
-    const [review, setReview] = useState<ReviewType & { submission: string }>();
+    const [review, setReview] = useState<SlicedReview & { submission: string }>();
     const [currentAnnotation, setCurrentAnnotation] = useState<Annotation | null>(null);
     const [clickToReveal, setCTR] = useState<boolean>(false);
     const interval = useRef<any>(null);
 
     const getReviewId = useCallback(async () => {
         try {
-            const response = await api.get<ReviewType>(`/review/of?submission_id=${submissionId}`);
+            const response = await apiGetReviewOf({ query: { submission_id: submissionId } });
             if (!response.data)
                 return setStatus("no_review");
             setReviewId(response.data.id);
@@ -55,7 +54,7 @@ function Review({ submissionId }: { submissionId: string }) {
 
     const getSubmission = useCallback(async () => {
         try {
-            const response = await api.get<Submission>(`/submission?id=${submissionId}`);
+            const response = await apiGetSubmission({ query: { id: submissionId } });
             return response.data;
         } catch (err) {
             console.error(err);
@@ -69,13 +68,18 @@ function Review({ submissionId }: { submissionId: string }) {
     const getReview = useCallback(async () => {
         if (!reviewId) return;
         try {
-            const response = await api.get<ReviewType>(`/review?id=${reviewId}`);
+            const response = await apiGetReview({ query: { id: reviewId } });
+            if (!response.data) return setStatus("error");
             if (response.data.status == "pending")
                 return setStatus("reviewing");
+            if (response.data.status == "failed")
+                return setStatus("failed");
+            if (!response.data.overall)
+                return setStatus("error");
             const submission = await getSubmission();
             setReview({
                 ...response.data,
-                submission: submission!.submission
+                submission: submission!.answers![0].content
             });
             setStatus('done');
             clearInterval(interval.current);
@@ -100,14 +104,13 @@ function Review({ submissionId }: { submissionId: string }) {
     }, [status]);
     useEffect(() => {
         if (!review) return;
-        // Trigger animation shortly after mount
         const timer = setTimeout(() => setMounted(true), 100);
         return () => clearTimeout(timer);
     }, [review]);
 
     const reviewNow = useCallback(async () => {
         try {
-            const response = await api.post<string>(`/review?submission_id=${submissionId}`);
+            const response = await apiRequestReview({ query: { submission_id: submissionId } });
             setStatus("reviewing");
             setReviewId(response.data);
         } catch (err) {
@@ -121,13 +124,13 @@ function Review({ submissionId }: { submissionId: string }) {
     }, [submissionId, navigator]);
 
     const annotations = useMemo<Annotation[]>(() => {
-        if (!review) return [];
-        if (!review.annotations) return [];
-        if (!review.annotations.length) return [{ key: "0", text: review.submission, isAnnotation: false }];
+        if (!review || !review.overall) return [];
+        if (!review.overall.annotations) return [];
+        if (!review.overall.annotations.length) return [{ key: "0", text: review.submission, isAnnotation: false }];
         const annotations: Annotation[] = [];
         let lastIndex = 0;
         const submission = review.submission;
-        for (const annotation of review.annotations) {
+        for (const annotation of review.overall.annotations) {
             const uniqueSearchPhrase = `${annotation.context_before} ${annotation.target_text}`;
             // Find the index in the real string
             const matchIndex = review.submission.indexOf(uniqueSearchPhrase);
@@ -165,19 +168,20 @@ function Review({ submissionId }: { submissionId: string }) {
 
     return <div className="w-full h-fit flex flex-1 min-h-0 overflow-auto">{
         status != "done" ? (
-            status == "reviewing" ? <div className="m-auto flex flex-col items-center gap-5">
-                <div className="relative">
-                    <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
-                    <div className="relative bg-white p-6 rounded-full shadow-lg border ">
-                        <Sparkle className="w-10 h-10 text-blue-500 animate-pulse" />
+            status == "reviewing"
+                ? <div className="m-auto flex flex-col items-center gap-5">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
+                        <div className="relative bg-white p-6 rounded-full shadow-lg border ">
+                            <Sparkle className="w-10 h-10 text-blue-500 animate-pulse" />
+                        </div>
                     </div>
+                    <div className="flex flex-col items-center">
+                        <h1 className="text-3xl font-bold">Reviewing</h1>
+                        <p className="text-xl px-10 text-center lg:p-0">The AI is reviewing your submission based on TOEIC standards</p>
+                    </div>
+                    <BarLoader width={300} />
                 </div>
-                <div className="flex flex-col items-center">
-                    <h1 className="text-3xl font-bold">Reviewing</h1>
-                    <p className="text-xl px-10 text-center lg:p-0">The AI is reviewing your submission based on TOEIC standards</p>
-                </div>
-                <BarLoader width={300} />
-            </div>
                 : status == "failed"
                     ? <div className="m-auto flex flex-col items-center gap-5">
                         <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
@@ -252,13 +256,13 @@ function Review({ submissionId }: { submissionId: string }) {
                                     strokeWidth="10"
                                     fill="transparent"
                                     strokeDasharray={radius * 2 * Math.PI}
-                                    strokeDashoffset={mounted ? radius * 2 * Math.PI * (1 - (review.score_range![1] + review.score_range![0]) / 2 / 200) : radius * 2 * Math.PI}
+                                    strokeDashoffset={mounted ? radius * 2 * Math.PI * (1 - (review.overall!.score_range![1] + review.overall!.score_range![0]) / 2 / 200) : radius * 2 * Math.PI}
                                     strokeLinecap="round"
                                     className="text-indigo-600 transition-all duration-1750 ease-in-out"
                                 />
                             </svg>
                             <div className="absolute flex flex-col items-center justify-center">
-                                <p className="text-xl font-bold text-indigo-700">{review.score_range![0]} - {review.score_range![1]}</p>
+                                <p className="text-xl font-bold text-indigo-700">{review.overall!.score_range![0]} - {review.overall!.score_range![1]}</p>
                             </div>
                         </div>
                         <h1 className="font-bold text-2xl text-slate-700 uppercase">Score range</h1>
@@ -267,10 +271,10 @@ function Review({ submissionId }: { submissionId: string }) {
                         <h1 className="font-bold text-2xl text-slate-700 uppercase">Details</h1>
                         <div className="w-full flex flex-col gap-5">{
                             [
-                                { title: "Grammar", score: review.detail_score!.grammar, icon: PenTool, bg: "bg-red-500" },
-                                { title: "Vocabulary", score: review.detail_score!.vocabulary, icon: BookOpen, bg: "bg-blue-400" },
-                                { title: "Organization", score: review.detail_score!.organization, icon: MessageSquare, bg: "bg-amber-500" },
-                                { title: "Task fulfillment", score: review.detail_score!.task_fulfillment, icon: Percent, bg: "bg-slate-600" },
+                                { title: "Grammar", score: review.overall!.detail_score!.grammar, icon: PenTool, bg: "bg-red-500" },
+                                { title: "Vocabulary", score: review.overall!.detail_score!.vocabulary, icon: BookOpen, bg: "bg-blue-400" },
+                                { title: "Organization", score: review.overall!.detail_score!.organization, icon: MessageSquare, bg: "bg-amber-500" },
+                                { title: "Task fulfillment", score: review.overall!.detail_score!.task_fulfillment, icon: Percent, bg: "bg-slate-600" },
                             ].map(val => <div className="flex flex-col w-full gap-2">
                                 <h2 className="text-xl flex flex-row items-center gap-2"><val.icon /> <span className="font-semibold">{val.title}</span> {val.score}</h2>
                                 <div className="w-full h-2 rounded-full bg-slate-200">
@@ -289,7 +293,7 @@ function Review({ submissionId }: { submissionId: string }) {
                             <Sparkles />
                             AI Feedback
                         </h1>
-                        <p className={(mounted ? "opacity-100" : "opacity-0") + " text-lg overflow-y-auto transition-all duration-2000"}>{review.overall_feedback}</p>
+                        <p className={(mounted ? "opacity-100" : "opacity-0") + " text-lg overflow-y-auto transition-all duration-2000"}>{review.overall!.overall_feedback}</p>
                     </div>
                 </div>
                 {clickToReveal && currentAnnotation && currentAnnotation.isAnnotation &&
@@ -341,11 +345,11 @@ function Review({ submissionId }: { submissionId: string }) {
                         : <span key={annotation.key} className=" whitespace-pre-wrap">{annotation.text}</span>
                     )}</p>
                 </div>
-                {review.improvement_suggestions && review.improvement_suggestions.length &&
+                {review.overall!.improvement_suggestions && review.overall!.improvement_suggestions.length &&
                     <div className="px-5 lg:py-5 lg:border-2 rounded-md h-fit text-xl">
                         <h1 className="font-bold text-2xl text-slate-700 uppercase">Sugesstions</h1>
                         <ul className="px-10 list-disc">
-                            {review.improvement_suggestions?.map(val => <li>{val}</li>)}
+                            {review.overall!.improvement_suggestions?.map(val => <li>{val}</li>)}
                         </ul>
                     </div>
                 }

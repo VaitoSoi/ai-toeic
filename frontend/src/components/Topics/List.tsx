@@ -1,5 +1,4 @@
-import api from "@/lib/api";
-import type { Topic } from "@/lib/typing";
+import { apiGetTopics, type SlicedTopic } from "@/api";
 import { cn, reduceWords } from "@/lib/utils";
 import { Mail, NotebookText, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -7,13 +6,13 @@ import { useNavigate } from "react-router";
 
 function List() {
     const navigator = useNavigate();
-    const [topics, setTopics] = useState<(Topic & { icon: typeof Mail })[]>();
+    const [topics, setTopics] = useState<(SlicedTopic & { icon: typeof Mail })[]>();
 
     const getTopics = useCallback(async () => {
         try {
-            const response = await api.get<Topic[]>("/topics");
+            const response = await apiGetTopics();
             setTopics(
-                response.data.map(val => ({
+                response.data!.map(val => ({
                     ...val,
                     icon: val.part == "2" ? Mail : NotebookText,
                     color: val.color.startsWith("bg-") ? val.color : `bg-${val.color}`

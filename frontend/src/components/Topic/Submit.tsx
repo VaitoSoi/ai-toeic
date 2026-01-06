@@ -1,5 +1,3 @@
-import api from "@/lib/api";
-import type { Submission, Topic } from "@/lib/typing";
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { error } from "../Toast";
@@ -7,20 +5,22 @@ import { useNavigate } from "react-router";
 import { Bug, Check, ChevronLeft, Clock, Sparkle } from "lucide-react";
 import { BarLoader } from "react-spinners";
 import Markdown from "react-markdown";
+import { apiGetTopic, apiRequestReview, apiSubmitSubmission, type SlicedTopic } from "@/api";
 
-function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData?: Topic }) {
+function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData?: SlicedTopic }) {
     const navigator = useNavigate();
-    const [topic, setTopic] = useState<Topic | undefined>(preloadedData);
+    const [topic, setTopic] = useState<SlicedTopic | undefined>(preloadedData);
     const [text, setText] = useState<string>("");
     const [timeLeft, setTimeLeft] = useState<number>(0);
-    const [confirmed, setConfirm] = useState<boolean>(false);
-    const [submissionStatus, setSubmissionStatus] = useState<"sending" | "sent">();
+    const [status, setStatus] = useState<"error" | "not_confirmed" | "writing" | "sending" | "sent">("not_confirmed");
     const topicReloadTimer = useRef<any>(null);
     const submissionTimer = useRef<any>(null);
 
     const getTopic = useCallback(async () => {
         try {
-            const response = await api.get<Topic>(`/topic?id=${id}`);
+            const response = await apiGetTopic({ query: { id } });
+            if (!response.data || !response.data.questions?.[0])
+                return setStatus("error");
             setTopic(response.data);
             if (response.data.status != "pending") {
                 if (response.data.status == "done")
@@ -45,22 +45,24 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
     }, [preloadedData, topic, getTopic]);
     useEffect(() => {
         submissionTimer.current = setInterval(
-            () => timeLeft > 0 && confirmed
+            () => timeLeft > 0 && status == "writing"
                 ? setTimeLeft(timeLeft => timeLeft -= 1)
                 : undefined,
             1000
         );
         return () => clearInterval(submissionTimer.current);
-    }, [timeLeft, confirmed]);
+    }, [timeLeft, status]);
 
     const send = useCallback(async (text: string) => {
         if (!topic) return;
-        setSubmissionStatus("sending");
+        setStatus("sending");
         try {
-            const response = await api.post<Submission>(`/submission?topic_id=${topic.id}`, { submission: text });
-            await api.post(`/review?submission_id=${response.data.id}`);
-            setSubmissionStatus("sent");
-            setTimeout(() => navigator(`/topic/${topic.id}/submission/${response.data.id}`), 5000);
+            const response = await apiSubmitSubmission({ query: { part: topic.part, topic_id: topic.id }, body: { submission: text } });
+            if (!response)
+                return setStatus("error");
+            await apiRequestReview({ query: { submission_id: response.data!.id } });
+            setStatus("sent");
+            setTimeout(() => navigator(`/topic/${topic.id}/submission/${response.data!.id}`), 5000);
         } catch (err) {
             console.error(err);
         }
@@ -100,7 +102,7 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         <p className="text-xl text-center lg:p-0">Please look at the server console and try again</p>
                     </div>
                 </div>
-            : !confirmed
+            : status == "not_confirmed"
                 ? <div className="lg:w-2/3 flex flex-col text-lg my-auto mx-10 lg:m-auto p-5 border-2 rounded-md">
                     <h1 className="text-xl font-bold">Direction</h1>
                     {topic.part == "2"
@@ -117,24 +119,11 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                     }
                     <button
                         className="ml-auto mr-5 mt-5 p-2 border-2 rounded-md cursor-pointer"
-                        onClick={() => setConfirm(true)}
+                        onClick={() => setStatus("writing")}
                     >Start writing</button>
                 </div>
-                : submissionStatus
-                    ? <div className="m-auto">{submissionStatus == "sending"
-                        ? <div className="flex flex-col items-center gap-5">
-                            <h1 className="text-3xl font-bold">Sending submission</h1>
-                            <BarLoader width={300} />
-                        </div>
-                        : <div className="flex flex-col items-center gap-5">
-                            <div className="rounded-full p-2 text-white bg-green-600"><Check strokeWidth={3} className="size-15" /></div>
-                            <div className="flex flex-col items-center gap-2">
-                                <h1 className="text-3xl font-bold">Sent submission</h1>
-                                <p className="text-xl">Redirect to review page after 5s</p>
-                            </div>
-                        </div>
-                    }</div>
-                    : <div className="lg:w-9/10 h-full lg:overflow-hidden flex-1 flex flex-col gap-5 py-5 lg:py-10">
+                : status == "writing"
+                    ? <div className="lg:w-9/10 h-full lg:overflow-hidden flex-1 flex flex-col gap-5 py-5 lg:py-10">
                         <div
                             className="w-fit flex flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
                             onClick={() => navigator(`/topic/${topic.id}`, { viewTransition: true })}
@@ -155,7 +144,7 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                                     </div>
                                 </div>
                                 <h1 className="text-2xl font-bold">{topic.summary?.summary}</h1>
-                                <div className="text-xl whitespace-pre-wrap overflow-y-auto"><Markdown>{topic.question}</Markdown></div>
+                                <div className="text-xl whitespace-pre-wrap overflow-y-auto"><Markdown>{topic.questions![0].question}</Markdown></div>
                             </div>
                             <div className="lg:w-3/5 flex flex-col border-2 lg:rounded-md">
                                 <textarea
@@ -179,6 +168,31 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                             </div>
                         </div>
                     </div>
+                    : <div className="m-auto">{
+                        status == "sending"
+                            ? <div className="flex flex-col items-center gap-5">
+                                <h1 className="text-3xl font-bold">Sending submission</h1>
+                                <BarLoader width={300} />
+                            </div>
+                            : status == "error"
+                                ? <div className="flex flex-col items-center gap-5">
+                                    <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
+                                        <Bug className="w-10 h-10 text-red-500 animate-pulse" />
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <h1 className="text-3xl font-bold">Failed to get topic</h1>
+                                        <p className="text-xl px-10 text-center lg:p-0">There is an error occured while fetching topic</p>
+                                        <p className="text-xl text-center lg:p-0">Please look at the console or reload page</p>
+                                    </div>
+                                </div>
+                                : <div className="flex flex-col items-center gap-5">
+                                    <div className="rounded-full p-2 text-white bg-green-600"><Check strokeWidth={3} className="size-15" /></div>
+                                    <div className="flex flex-col items-center gap-2">
+                                        <h1 className="text-3xl font-bold">Sent submission</h1>
+                                        <p className="text-xl">Redirect to review page after 5s</p>
+                                    </div>
+                                </div>
+                    }</div>
     }</div>;
 }
 

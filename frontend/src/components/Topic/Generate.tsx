@@ -2,17 +2,18 @@ import { ChevronLeft, ChevronRight, Mail, NotebookText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { error } from "../Toast";
-import api from "@/lib/api";
-import type { Topic } from "@/lib/typing";
+import { apiCreateTopic } from "@/api";
 
 function Generate() {
     const navigator = useNavigate();
-    const [part, setPart] = useState<2 | 3>();
+    const [part, setPart] = useState<"2" | "3">();
 
     const generateTopic = useCallback(async () => {
         try {
-            const response = await api.post<Topic>(`/topic?part=${part}`);
-            const data = response.data;
+            const response = await apiCreateTopic({
+                query: { part: part! }
+            });
+            const data = response.data!;
             navigator(
                 `/topic/${data.id}/submit`,
                 { state: JSON.stringify(data) }
@@ -23,7 +24,7 @@ function Generate() {
             navigator("/");
         }
     }, [part, navigator]);
-    useEffect(() => part == 2 || part == 3 ? void generateTopic() : undefined, [part, generateTopic]);
+    useEffect(() => part == "2" || part == "3" ? void generateTopic() : undefined, [part, generateTopic]);
 
     return <div className="h-full w-full flex">
         <div className="m-auto w-150">
@@ -40,7 +41,7 @@ function Generate() {
                 <div className="w-full mt-4 flex flex-col gap-2">
                     <div
                         className="w-full p-5 flex flex-row items-center gap-5 border-2 rounded-md hover:bg-green-300/20 hover:border-green-300 transition-all duration-200 group cursor-pointer"
-                        onClick={() => setPart(2)}
+                        onClick={() => setPart("2")}
                     >
                         <div className="p-3 rounded-full bg-green-100 text-green-600 group-hover:bg-green-200 transition-colors">
                             <Mail className="size-10" />
@@ -55,7 +56,7 @@ function Generate() {
                     </div>
                     <div
                         className="w-full p-5 flex flex-row items-center gap-5 border-2 rounded-md hover:bg-blue-300/20 hover:border-blue-300 transition-all duration-200 group cursor-pointer"
-                        onClick={() => setPart(3)}
+                        onClick={() => setPart("3")}
                     >
                         <div className="p-3 rounded-full bg-blue-100 text-blue-600 group-hover:bg-blue-200 transition-colors">
                             <NotebookText className="size-10" />

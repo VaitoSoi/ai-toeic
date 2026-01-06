@@ -1,5 +1,3 @@
-import api from "@/lib/api";
-import type { Submission, Topic } from "@/lib/typing";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { error, success } from "../Toast";
@@ -8,22 +6,18 @@ import { ChevronLeft, Mail, NotebookText, Plus, Trash, History, Calendar, Chevro
 import { Skeleton } from "../ui/skeleton";
 import Markdown from "react-markdown";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { apiDeleteTopic, apiGetTopic, type SlicedTopic } from "@/api";
 
-function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData?: Topic }) {
+function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData?: SlicedTopic }) {
     const navigator = useNavigate();
-    const [topic, setTopic] = useState<Topic | undefined>(preloadedData);
+    const [topic, setTopic] = useState<SlicedTopic | undefined>(preloadedData);
 
     const getTopic = useCallback(async () => {
         try {
-            const response = await api.get<Topic>(`/topic?id=${id}`);
-            setTopic({
-                ...response.data,
-                submissions: await Promise.all(
-                    response.data.submissions.map(async (sub) =>
-                        (await api.get<Submission>(`/submission?id=${sub.id}`)).data
-                    )
-                )
+            const response = await apiGetTopic({
+                query: { id }
             });
+            setTopic(response.data);
         } catch (err) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
@@ -36,9 +30,11 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
 
     const deleteThis = useCallback(async () => {
         try {
-            await api.delete<Topic>(`/topic?id=${id}`);
+            await apiDeleteTopic({
+                query: { id }
+            });
             navigator("/", { viewTransition: true });
-            success(`Deleted topic ${topic?.summary?.summary}`);
+            success(`Deleted topic ${topic?.summary?.summary || ""}`);
         } catch (err) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
@@ -67,7 +63,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                                 </div>
                                 <div>
                                     <h1 className="text-xl lg:text-2xl font-bold">{topic.summary?.summary}</h1>
-                                    <p className="text-lg lg:text-xl">{topic.part == "2" ? "P2 Response to an email" : "P3 Opinion essay"}</p>
+                                    <p className="text-lg lg:text-xl">{topic.part == "2" ? "P2 - Response to an email" : "P3 - Opinion essay"}</p>
                                 </div>
                             </div>
                             <div className="flex flex-row gap-2 ml-auto mr-5">
@@ -86,7 +82,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                             </div>
                         </div>
                         <div className="w-full text-lg whitespace-pre-wrap">
-                            <Markdown>{topic.question}</Markdown>
+                            <Markdown>{topic.questions?.[0].question}</Markdown>
                         </div>
                     </div>
                 </div>
@@ -96,7 +92,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         <h1 className="text-2xl font-bold">Submission history</h1>
                     </div>
                     <div className="grid grid-cols-1 lg:gap-2 pb-10">{
-                        topic.submissions.length
+                        topic.submissions?.length
                             ? topic.submissions.map((submission) =>
                                 <div
                                     className="w-fit lg:w-full lg:m-0 h-fit p-5 flex flex-row items-center gap-5 lg:border-2 hover:border-blue-300 transition-all duration-200 lg:rounded-md group cursor-pointer"
@@ -106,16 +102,17 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                                         <Calendar />
                                         <p>{new Date(submission.created_at).toDateString()}</p>
                                     </div>
-                                    {submission.review ? <>
-                                        <h1 className="text-xl font-medium group-hover:text-blue-600 transition-all duration-200">{submission.review.summary_feedback}</h1>
+                                    {submission.review?.overall ? <>
+                                        <h1 className="text-xl font-medium group-hover:text-blue-600 transition-all duration-200">{submission.review.overall.summary_feedback}</h1>
                                         <div className="ml-auto flex flex-col items-center w-40">
-                                            <p className="text-xl font-bold">{submission.review?.score_range
-                                                ? `${submission.review.score_range[0]} - ${submission.review?.score_range[1]}`
-                                                : "Evaluating"
+                                            <p className="text-xl font-bold">{
+                                                submission.review.overall.score_range
+                                                    ? `${submission.review.overall.score_range[0]} - ${submission.review.overall.score_range[1]}`
+                                                    : "Evaluating"
                                             }</p>
                                             <p className="text-slate-500 uppercase font-bold">Score</p>
                                         </div>
-                                    </> : <h1 className="text-xl font-medium group-hover:text-blue-600 transition-all duration-200">Unfinished draft</h1>}
+                                    </> : <h1 className="text-xl font-medium group-hover:text-blue-600 transition-all duration-200">Not evaluated</h1>}
                                     <ChevronRight className="size-0 group-hover:size-9 group-hover:text-blue-600 transition-all duration-200" />
                                 </div>)
                             : <div className="w-fit lg:w-full p-15 m-auto flex flex-col items-center border-2 rounded-md">
@@ -129,7 +126,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. 
+                        This action cannot be undone.
                         This will permanently delete this topic and all essays belong to it.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
