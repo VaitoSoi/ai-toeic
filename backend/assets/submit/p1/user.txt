@@ -1,0 +1,10 @@
+### TOEIC SUBMISSION DATA
+
+**ARTIST PROMPT:** 
+{artist_prompt}
+
+**KEYWORDS:**
+{keywords}
+
+**USER SUBMISSION:**
+{submission}
