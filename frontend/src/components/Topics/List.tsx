@@ -1,6 +1,6 @@
 import api from "@/lib/api";
 import type { Topic } from "@/lib/typing";
-import { reduceWords } from "@/lib/utils";
+import { cn, reduceWords } from "@/lib/utils";
 import { Mail, NotebookText, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
@@ -15,7 +15,8 @@ function List() {
             setTopics(
                 response.data.map(val => ({
                     ...val,
-                    icon: val.part == "2" ? Mail : NotebookText
+                    icon: val.part == "2" ? Mail : NotebookText,
+                    color: val.color.startsWith("bg-") ? val.color : `bg-${val.color}`
                 }))
             );
         } catch (error) {
@@ -33,7 +34,7 @@ function List() {
                     className="min-h-65 border-2 rounded-md overflow-hidden hover:shadow-md transition-shadow duration-200 group cursor-pointer"
                     onClick={() => navigator(`/topic/${val.id}`, { viewTransition: true })}
                 >
-                    <div className="w-full h-2" />
+                    <div className={cn("w-full h-2", val.color)} />
                     <div className="p-6 flex flex-col gap-3">
                         <val.icon strokeWidth={2} className={`size-15 p-2 bg-slate-300/30 rounded-md`} />
                         <h2 className="text-2xl font-bold group-hover:text-blue-500 transition-colors duration-200">{reduceWords(val.summary?.summary || "No title", 25)}</h2>
