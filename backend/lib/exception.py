@@ -4,6 +4,12 @@ class TopicNotFound(ValueError):
         self.message = "topic not found"
         self.id = id
 
+class QuestionNotFound(ValueError): 
+    def __init__(self, id: str | None = None):
+        super()
+        self.message = "question not found"
+        self.id = id
+
 class SubmissionNotFound(ValueError): 
     def __init__(self, id: str | None = None):
         super()
