@@ -3,6 +3,7 @@ import re
 from asyncio import Task, create_task, gather, get_event_loop
 from datetime import datetime
 from enum import Enum as PyEnum
+from random import choices
 from traceback import format_exc
 from typing import Any, Awaitable, Callable, Coroutine, Literal, Optional, TypeVar, cast
 from uuid import uuid4
@@ -30,19 +31,23 @@ from sqlmodel import (
 from .ai import (
     Annotation,
     DetailScore,
+    P1DetailScore,
     P1Response,
+    P1ReviewResponse,
     P2Response,
     P3Response,
     ReviewResponse,
     Summary,
     generate_image,
     generate_topic,
-    review as ai_review,
+    review_p1 as ai_review_p1,
+    review_p2_3 as ai_review_p2_3,
+    summary_review_p1,
 )
 from .env import DB_URL
-from .exception import ReviewNotFound, SubmissionNotFound, TopicNotFound
+from .exception import QuestionNotFound, ReviewNotFound, SubmissionNotFound, TopicNotFound
 from .task import add_task
-from .util import PydanticJSON, PydanticListJSON
+from .util import PydanticJSON, PydanticListJSON, colors
 
 
 class Status(PyEnum):
@@ -65,6 +70,7 @@ class Topic(SQLModel, table=True):
     __tablename__ = "topic"  # pyright: ignore[reportAssignmentType]
 
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
+    color: str = SQLField(default_factory=lambda: choices(colors))
 
     status: Status = SQLField(sa_column=Column(SQLEnum(Status)))
 
@@ -73,11 +79,7 @@ class Topic(SQLModel, table=True):
     )
     part: TopicPart = SQLField(sa_column=Column(SQLEnum(TopicPart)))
 
-    question: Optional[str] = SQLField(default=None)  # Part 2 & 3
-    question_set: Optional[list["TopicQuestion"]] = Relationship(
-        back_populates="topic"
-    )  # Part 1
-
+    questions: list["Question"] = Relationship(back_populates="topic")  # Part 1
     summary: Optional[Summary] = SQLField(default=None, sa_type=PydanticJSON(Summary))
 
     submissions: list["Submission"] = Relationship(back_populates="topic")
@@ -86,31 +88,35 @@ class Topic(SQLModel, table=True):
     created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
-class TopicQuestion(SQLModel, table=True):
-    __tablename__ = "topic_question"  # pyright: ignore[reportAssignmentType]
+class Question(SQLModel, table=True):
+    __tablename__ = "question"  # type: ignore
 
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
     topic_id: str = SQLField(foreign_key="topic.id")
-    topic: Topic = Relationship(back_populates="question_set")
+    topic: Topic = Relationship(back_populates="questions")
 
-    artist_prompt: str
-    file: str
-    keywords: tuple[str, str] = SQLField(sa_column=Column(JSON))
+    question: Optional[str] = SQLField(default=None)
+
+    artist_prompt: Optional[str] = SQLField(default=None)
+    file: Optional[str] = SQLField(default=None)
+    keywords: Optional[tuple[str, str]] = SQLField(default=None, sa_column=Column(JSON))
+
+    answers: list["Answer"] = Relationship(back_populates="question")
 
     created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
 class SlicedTopic(BaseModel):
     id: str
+    color: str
 
     status: Status
 
     type: TopicType
     part: TopicPart
 
-    question: Optional[str]
-    question_set: Optional[list["SlicedTopicQuestion"]]
+    questions: Optional[list["SlicedTopicQuestion"]] = PydanticField(default=[])
 
     submissions: list["SlicedSubmission"] = PydanticField(default=[])
     reviews: list["SlicedReview"] = PydanticField(default=[])
@@ -123,30 +129,55 @@ class SlicedTopic(BaseModel):
 class SlicedTopicQuestion(BaseModel):
     id: str
     topic_id: str
-    artist_prompt: str
-    file: str
-    keywords: tuple[str, str]
+    question: Optional[str]
+    artist_prompt: Optional[str]
+    file: Optional[str]
+    keywords: Optional[tuple[str, str]]
     created_at: datetime
 
 
 class Submission(SQLModel, table=True):
     __tablename__ = "submission"  # type: ignore
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
-    topic_id: str
-    submission: str
 
     topic_id: str = SQLField(foreign_key="topic.id", ondelete="CASCADE")
     topic: Topic = Relationship(back_populates="submissions")
 
-    review: Optional["Review"] = Relationship(back_populates="submission")
+    answers: list["Answer"] = Relationship(back_populates="submission")
+
+    review: Optional["Review"] = Relationship()
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now())
+
+
+class Answer(SQLModel, table=True):
+    __tablename__ = "answer"  # type: ignore
+
+    id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
+
+    question_id: str = SQLField(foreign_key="question.id", ondelete="CASCADE")
+    question: Question = Relationship(back_populates="answers")
+
+    submission_id: str = SQLField(foreign_key="submission.id", ondelete="CASCADE")
+    submission: Submission = Relationship(back_populates="answers")
+
+    content: str
+
     created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
 class SlicedSubmission(BaseModel):
     id: str
     topic_id: str
-    submission: str
+    answers: list["SlicedAnswer"] = PydanticField(default=[])
     review: Optional["SlicedReview"] = PydanticField(default=None)
+    created_at: datetime
+
+
+class SlicedAnswer(BaseModel):
+    id: str
+    question_id: str
+    submission_id: str
+    content: str
     created_at: datetime
 
 
@@ -158,37 +189,60 @@ class Review(SQLModel, table=True):
     topic_id: str = SQLField(foreign_key="topic.id", ondelete="CASCADE")
     topic: Topic = Relationship(back_populates="reviews")
 
-    submission_id: str = SQLField(foreign_key="submission.id", ondelete="CASCADE")
-    submission: Submission = Relationship(back_populates="review")
-
     status: Status
 
-    score_range: Optional[tuple[int, int]] = SQLField(
-        default=None, sa_column=Column(JSON)
-    )
-    level_achieved: Optional[int] = SQLField(default=None)
-    overall_feedback: Optional[str] = SQLField(default=None)
-    summary_feedback: Optional[str] = SQLField(default=None)
-    detail_score: Optional[DetailScore] = SQLField(
-        default=None, sa_type=PydanticJSON(DetailScore)
-    )
-    annotations: Optional[list[Annotation]] = SQLField(
-        default=None, sa_type=PydanticListJSON(Annotation)
-    )
-    improvement_suggestions: Optional[list[str]] = SQLField(
-        default=None, sa_column=Column(JSON)
-    )
+    overall: Optional["OverallReview"] = Relationship(back_populates="review")
+    answers: Optional[list["AnswerReview"]] = Relationship(back_populates="review")
 
     created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
+class OverallReview(SQLModel, table=True):
+    __tablename__ = "overall_review"  # type: ignore
+
+    id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
+
+    review_id: str = SQLField(foreign_key="review.id", ondelete="CASCADE")
+    review: Review = Relationship(back_populates="overall")
+
+    score_range: tuple[int, int] = SQLField(sa_column=Column(JSON))
+    level_achieved: int
+    overall_feedback: str
+    summary_feedback: str
+    detail_score: DetailScore = SQLField(sa_type=PydanticJSON(DetailScore))
+    annotations: list[Annotation] = SQLField(sa_type=PydanticListJSON(Annotation))
+    improvement_suggestions: list[str] = SQLField(sa_column=Column(JSON))
+
+
+class AnswerReview(SQLModel, table=True):
+    __tablename__ = "answer_review"  # type: ignore
+
+    id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
+
+    review_id: str = SQLField(foreign_key="review.id", ondelete="CASCADE")
+    review: Review = Relationship(back_populates="answers")
+
+    answer_id: str = SQLField(foreign_key="answer.id", ondelete="CASCADE")
+    answer: Answer = Relationship()
+
+    overall_score: int
+    feedback: str
+    detail_score: P1DetailScore = SQLField(sa_column=Column(JSON))
+    annotations: list[Annotation]
+
+
 class SlicedReview(BaseModel):
     id: str
-
     topic_id: str
-    submission_id: str
-
     status: Status
+    overall: Optional["SlicedOverallReview"] = PydanticField(default=None)
+    answers: list["SlicedAnswerReview"] = PydanticField(default=[])
+    created_at: datetime
+
+
+class SlicedOverallReview(BaseModel):
+    id: str
+    review_id: str
 
     score_range: Optional[tuple[int, int]] = PydanticField(default=None)
     level_achieved: Optional[int] = PydanticField(default=None)
@@ -198,7 +252,16 @@ class SlicedReview(BaseModel):
     annotations: Optional[list[Annotation]] = PydanticField(default=None)
     improvement_suggestions: Optional[list[str]] = PydanticField(default=None)
 
-    created_at: datetime
+
+class SlicedAnswerReview(BaseModel):  # For P1
+    id: str
+    review_id: str
+    answer_id: str
+
+    overall_score: int
+    feedback: str
+    details: P1DetailScore
+    annotations: list[Annotation]
 
 
 class Session(SQLModel, table=True):
@@ -224,9 +287,10 @@ engine = create_async_engine(DB_URL)
 
 @event.listens_for(engine.sync_engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON;")
-    cursor.close()
+    if engine.dialect.name == "sqlite":
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
 
 
 async def init():
@@ -263,13 +327,13 @@ Formater
 def format_topic(topic: Topic):
     return SlicedTopic(
         id=topic.id,
+        color=topic.color,
         status=topic.status,
         type=topic.type,
         part=topic.part,
         summary=topic.summary,
-        question=topic.question,
-        question_set=[format_topic_question(question) for question in topic.question_set]
-        if topic.question_set
+        questions=[format_topic_question(question) for question in topic.questions]
+        if topic.questions
         else None,
         submissions=[format_submission(sub) for sub in topic.submissions],
         reviews=[format_review(review) for review in topic.reviews],
@@ -277,10 +341,11 @@ def format_topic(topic: Topic):
     )
 
 
-def format_topic_question(question: TopicQuestion):
+def format_topic_question(question: Question):
     return SlicedTopicQuestion(
         id=question.id,
         topic_id=question.topic_id,
+        question=question.question,
         artist_prompt=question.artist_prompt,
         file=question.file,
         keywords=question.keywords,
@@ -288,11 +353,21 @@ def format_topic_question(question: TopicQuestion):
     )
 
 
+def format_answer(answer: Answer):
+    return SlicedAnswer(
+        id=answer.id,
+        question_id=answer.question_id,
+        submission_id=answer.submission_id,
+        content=answer.content,
+        created_at=answer.created_at,
+    )
+
+
 def format_submission(submission: Submission):
     return SlicedSubmission(
         id=submission.id,
         topic_id=submission.topic_id,
-        submission=submission.submission,
+        answers=[format_answer(answer) for answer in submission.answers],
         review=format_review(submission.review) if submission.review else None,
         created_at=submission.created_at,
     )
@@ -302,16 +377,38 @@ def format_review(review: Review):
     return SlicedReview(
         id=review.id,
         topic_id=review.topic_id,
-        submission_id=review.submission_id,
         status=review.status,
-        score_range=review.score_range,
-        level_achieved=review.level_achieved,
-        overall_feedback=review.overall_feedback,
-        summary_feedback=review.summary_feedback,
-        detail_score=review.detail_score,
-        annotations=review.annotations,
-        improvement_suggestions=review.improvement_suggestions,
+        overall=format_overall_review(review.overall) if review.overall else None,
+        answers=[format_question_review(q) for q in review.answers]
+        if review.answers
+        else [],
         created_at=review.created_at,
+    )
+
+
+def format_overall_review(overall: OverallReview):
+    return SlicedOverallReview(
+        id=overall.id,
+        review_id=overall.review_id,
+        score_range=overall.score_range,
+        level_achieved=overall.level_achieved,
+        overall_feedback=overall.overall_feedback,
+        summary_feedback=overall.summary_feedback,
+        detail_score=overall.detail_score,
+        annotations=overall.annotations,
+        improvement_suggestions=overall.improvement_suggestions,
+    )
+
+
+def format_question_review(question_review: AnswerReview):
+    return SlicedAnswerReview(
+        id=question_review.id,
+        review_id=question_review.review_id,
+        answer_id=question_review.answer_id,
+        overall_score=question_review.overall_score,
+        details=question_review.detail_score,
+        feedback=question_review.feedback,
+        annotations=question_review.annotations,
     )
 
 
@@ -326,9 +423,9 @@ async def get_topics(all: bool = False, _session: AsyncSession | None = None):
             select(Topic)
             .order_by(desc(Topic.created_at))
             .options(
-                selectinload(Topic.submissions),  # type: ignore
+                selectinload(Topic.submissions).selectinload(Submission.review),  # type: ignore
                 selectinload(Topic.reviews),  # type: ignore
-                selectinload(Topic.question_set),  # type: ignore
+                selectinload(Topic.questions),  # type: ignore
             )
         )
         if not all:
@@ -346,9 +443,9 @@ async def _get_topic(id: str, _session: AsyncSession | None = None):
             .where(Topic.id == id)
             .order_by(desc(Topic.created_at))
             .options(
-                selectinload(Topic.submissions),  # type: ignore
+                selectinload(Topic.submissions).selectinload(Submission.review),  # type: ignore
                 selectinload(Topic.reviews),  # type: ignore
-                selectinload(Topic.question_set),  # type: ignore
+                selectinload(Topic.questions),  # type: ignore
             )
         )
         topic = (await session.execute(statement)).scalar()
@@ -365,8 +462,18 @@ async def get_topic(id: str, _session: AsyncSession | None = None):
     return format_topic(topic)
 
 
+async def _get_question(id, _session: AsyncSession | None = None):
+    async def _inner(session: AsyncSession):
+        statement = select(Question).where(Question.id == id)
+        question = (await session.execute(statement)).scalar()
+        if question is None:
+            raise QuestionNotFound()
+        return question
+
+    return await create_session_and_run(_inner, _session)
+
+
 class CombinedP1Response(BaseModel):
-    prompt: str
     keywords: tuple[str, str]
     image_url: str
 
@@ -384,7 +491,6 @@ async def _create_question_p1():
         raise RuntimeError("can't generate image")
 
     return CombinedP1Response(
-        prompt=prompt_response.artist_prompt,
         keywords=prompt_response.keywords,
         image_url=image_url,
     )
@@ -412,7 +518,7 @@ async def _update_topic_p1(
                 topic.status = Status.failed
 
             else:
-                question_set: list[TopicQuestion] = []
+                question_set: list[Question] = []
                 for response in responses:
                     image_id = uuid4().__str__()
                     image_ext, image_data = cast(
@@ -424,9 +530,8 @@ async def _update_topic_p1(
                     async with open(f"data/image/{filename}", "wb") as file:
                         await file.write(base64.b64decode(image_data))
 
-                    question = TopicQuestion(
+                    question = Question(
                         topic_id=topic.id,
-                        artist_prompt=response.prompt,
                         keywords=response.keywords,
                         file=filename,
                     )
@@ -453,13 +558,15 @@ async def _update_topic_p2_3(
 
         async def _update_inner(update_session: AsyncSession):
             topic = await _get_topic(topic_id, update_session)
+            question: Optional[Question] = None
+
             if not status or response is None:
                 topic.status = Status.failed
             else:
-                question: str
+                question_str: str
                 if isinstance(response, P2Response):
                     content = response.test_content
-                    question = (
+                    question_str = (
                         f"**From:** {content.email_header.from_}\n"
                         + f"**To:** {content.email_header.to}\n"
                         + f"**Subject:** {content.email_header.subject}\n"
@@ -471,7 +578,7 @@ async def _update_topic_p2_3(
                     )
                 elif isinstance(response, P3Response):
                     content = response.test_content
-                    question = (
+                    question_str = (
                         "**Directions:** Read the question below. "
                         + "You will have 30 minutes to plan, write, and revise your essay. "
                         + "Typically, an effective essay will contain a minimum of 300 words.\n"
@@ -480,13 +587,16 @@ async def _update_topic_p2_3(
                         + f"{content.question_prompt}"
                     )
 
-                print(question)
-
                 topic.status = Status.done
                 topic.summary = response.information
-                topic.question = question
+                question = Question(
+                    topic_id=topic_id,
+                    question=question_str,
+                )
 
             update_session.add(topic)
+            if question:
+                update_session.add(question)
             await update_session.commit()
 
         await create_session_and_run(_update_inner)
@@ -595,30 +705,71 @@ async def get_submissions_of_topic(topic_id: str, _session: AsyncSession | None 
     return topic.submissions
 
 
-async def submit(
-    topic_id: str, submitted_text: str, _session: AsyncSession | None = None
+async def p1_submit(
+    topic_id: str,
+    submissions: list[tuple[str, str]],  # topic question id, submission
+    _session: AsyncSession | None = None,
 ):
     async def _inner(session: AsyncSession):
-        topic = await get_topic(topic_id, _session)
-        submission = Submission(topic_id=topic.id, submission=submitted_text)
-        session.add(submission)
+        topic = await _get_topic(topic_id, session)
+        if topic.part != TopicPart.I:
+            raise ValueError("wrong function")
+
+        submission_id = uuid4().__str__()
+        submission = Submission(id=submission_id, topic_id=topic_id)
+        answers: list[Answer] = []
+        for question_id, submitted_text in submissions:
+            question_submission = Answer(
+                submission_id=submission_id,
+                question_id=question_id,
+                content=submitted_text,
+            )
+            answers.append(question_submission)
+
+        session.add_all([submission, *answers])
         await session.commit()
-        return format_submission(submission)
 
     return await create_session_and_run(_inner, _session)
 
 
-async def update_submission(
-    id: str, submitted_text: str, _session: AsyncSession | None = None
+async def p23_submit(
+    topic_id: str,
+    submitted_text: str,
+    _session: AsyncSession | None = None,
 ):
     async def _inner(session: AsyncSession):
-        submission = await _get_submission(id, session)
-        submission.submission = submitted_text
-        session.add(submission)
-        await session.commit()
-        return format_submission(submission)
+        topic = await get_topic(topic_id, _session)
 
-    return await create_session_and_run(_inner)
+        if topic.part not in [TopicPart.II, topic.part == TopicPart.III]:
+            raise ValueError("wrong function")
+
+        submission_id = uuid4().__str__()
+        submission = Submission(topic_id=topic.id)
+        answer = Answer(
+            submission_id=submission_id,
+            question_id=cast(list[Question], topic.questions)[0].id,
+            content=submitted_text,
+        )
+        session.add_all([submission, answer])
+        await session.commit()
+
+        new_submission = await _get_submission(submission.id)
+        return format_submission(new_submission)
+
+    return await create_session_and_run(_inner, _session)
+
+
+# async def update_submission(
+#     id: str, submitted_text: str, _session: AsyncSession | None = None
+# ):
+#     async def _inner(session: AsyncSession):
+#         submission = await _get_submission(id, session)
+#         submission.submission = submitted_text
+#         session.add(submission)
+#         await session.commit()
+#         return format_submission(submission)
+
+#     return await create_session_and_run(_inner)
 
 
 async def delete_submission(id: str, _session: AsyncSession | None = None):
@@ -680,6 +831,135 @@ async def get_review_of_submission(
     return None
 
 
+async def _inject_review(id: str, coro: Awaitable[T]) -> tuple[str, T]:
+    return (id, await coro)
+
+
+async def _review_p1(submission_id: str, _session: Optional[AsyncSession] = None):
+    async def _inner(session: AsyncSession):
+        submission = await _get_submission(submission_id, session)
+        tasks: list[Task[tuple[str, P1ReviewResponse]]] = []
+
+        for answer in submission.answers:
+            question = await _get_question(answer.question_id)
+            if not question.file or not question.artist_prompt or not question.keywords:
+                raise ValueError("missing p1 property")
+            tasks.append(
+                create_task(
+                    coro=_inject_review(
+                        answer.id,
+                        cast(
+                            Awaitable[P1ReviewResponse],
+                            ai_review_p1(
+                                file_path=f"data/image/{question.file}",
+                                artist_prompt=question.artist_prompt,
+                                keywords=question.keywords,
+                                submission=answer.content,
+                            ),
+                        ),
+                    )
+                )
+            )
+
+        responses = await gather(*tasks)
+        overall = cast(
+            ReviewResponse,
+            await summary_review_p1([response[1] for response in responses]),
+        )
+
+        return (responses, overall)
+
+    return await create_session_and_run(_inner, _session)
+
+
+async def _update_review_p1(
+    id: str,
+    status: bool,
+    response: tuple[list[tuple[str, P1ReviewResponse]], ReviewResponse] | None,
+):
+    try:
+        task, review_id = id.split(":")
+        if task != "review_p2_3":
+            return
+
+        async def _update_inner(update_session: AsyncSession):
+            review = await _get_review(review_id, update_session)
+            overall_review = None
+            answer_reviews: list[AnswerReview] = []
+
+            if not status or response is None:
+                review.status = Status.failed
+            else:
+                review.status = Status.done
+                review_responses, response_overall = response
+                for answer_id, review_response in review_responses:
+                    answer_reviews.append(
+                        AnswerReview(
+                            review_id=review.id,
+                            answer_id=answer_id,
+                            overall_score=review_response.overall_score,
+                            feedback=review_response.feedback,
+                            detail_score=review_response.detail_score,
+                            annotations=review_response.annotations,
+                        )
+                    )
+
+                overall_review = OverallReview(
+                    review_id=review.id,
+                    score_range=response_overall.score_range,
+                    level_achieved=response_overall.level_achieved,
+                    overall_feedback=response_overall.overall_feedback,
+                    summary_feedback=response_overall.summary_feedback,
+                    detail_score=response_overall.detail_score,
+                    annotations=response_overall.annotations,
+                    improvement_suggestions=response_overall.improvement_suggestions,
+                )
+
+            update_session.add_all([review, *answer_reviews])
+            if overall_review:
+                update_session.add(overall_review)
+            await update_session.commit()
+
+        await create_session_and_run(_update_inner)
+    except Exception:
+        print(format_exc())
+
+
+async def _update_review_p2_3(id: str, status: bool, response: ReviewResponse | None):
+    try:
+        task, review_id = id.split(":")
+        if task != "review_p2_3":
+            return
+
+        async def _update_inner(update_session: AsyncSession):
+            review = await _get_review(review_id, update_session)
+            overall_review = None
+
+            if not status or response is None:
+                review.status = Status.failed
+            else:
+                review.status = Status.done
+                overall_review = OverallReview(
+                    review_id=review.id,
+                    score_range=response.score_range,
+                    level_achieved=response.level_achieved,
+                    overall_feedback=response.overall_feedback,
+                    summary_feedback=response.summary_feedback,
+                    detail_score=response.detail_score,
+                    annotations=response.annotations,
+                    improvement_suggestions=response.improvement_suggestions,
+                )
+
+            update_session.add(review)
+            if overall_review:
+                update_session.add(overall_review)
+            await update_session.commit()
+
+        await create_session_and_run(_update_inner)
+    except Exception:
+        print(format_exc())
+
+
 async def review(submission_id: str, _session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
         submission = await _get_submission(submission_id, session)
@@ -687,49 +967,33 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
         if not topic:
             raise TopicNotFound()
 
-        async def update_review(id: str, status: bool, response: ReviewResponse | None):
-            try:
-                task, review_id = id.split(":")
-                if task != "review":
-                    return
-
-                async def _update_inner(update_session: AsyncSession):
-                    review = await _get_review(review_id, update_session)
-                    if not status or response is None:
-                        review.status = Status.failed
-                    else:
-                        review.status = Status.done
-                        review.score_range = response.score_range
-                        review.level_achieved = response.level_achieved
-                        review.overall_feedback = response.overall_feedback
-                        review.summary_feedback = response.summary_feedback
-                        review.detail_score = response.detail_score
-                        review.annotations = response.annotations
-                        review.improvement_suggestions = response.improvement_suggestions
-                    update_session.add(review)
-                    await update_session.commit()
-
-                await create_session_and_run(_update_inner)
-            except Exception:
-                print(format_exc())
-
         id = uuid4().__str__()
-        add_task(
-            ai_review(
-                part=topic.part.value,
-                topic=cast(str, topic.question),
-                submission=submission.submission,
-            ),
-            f"review:{id}",
-            callback=update_review,
-            event_loop=get_event_loop(),
-        )
         review_obj = Review(
             id=id,
-            submission_id=submission.id,
             topic_id=topic.id,
             status=Status.pending,
         )
+
+        if topic.part == TopicPart.I:
+            add_task(
+                _review_p1(submission_id, session),
+                f"review_p1:{id}",
+                callback=_update_review_p1,
+                event_loop=get_event_loop(),
+            )
+        elif topic.part.value in [TopicPart.II, TopicPart.III]:
+            answer = submission.answers[0].content
+            add_task(
+                ai_review_p2_3(
+                    part=topic.part.value,
+                    topic=cast(str, topic.questions[0].question),
+                    submission=answer,
+                ),
+                f"review_p2_3:{id}",
+                callback=_update_review_p2_3,
+                event_loop=get_event_loop(),
+            )
+
         session.add(review_obj)
         await session.commit()
         return (review_obj, id)
@@ -765,11 +1029,11 @@ async def add_session(
 
 async def statistics():
     async def _inner(session: AsyncSession):
-        reviews = filter(lambda x: x.score_range is not None, await get_reviews(session))
+        reviews = filter(lambda x: x.overall is not None, await get_reviews(session))
 
         mid_points: list[float] = []
         for review in reviews:
-            score_range = cast(tuple[int, int], review.score_range)
+            score_range = cast(OverallReview, review.overall).score_range
             mid_points.append((score_range[0] + score_range[1]) / 2)
 
         average_score = sum(mid_points) / len(mid_points) if len(mid_points) else 0
