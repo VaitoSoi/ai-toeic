@@ -1,3 +1,4 @@
+import base64
 import json
 from random import choice, choices
 from typing import Any, Literal, Optional, Union
@@ -88,6 +89,48 @@ class P3Response(BaseModel):
     test_content: P3Content
 
 
+class ReviewResponse(SQLModel):
+    score_range: tuple[int, int]
+    level_achieved: int
+    overall_feedback: str
+    summary_feedback: str
+    detail_score: "DetailScore"
+    annotations: list["Annotation"]
+    improvement_suggestions: list[str]
+
+
+class DetailScore(SQLModel):
+    grammar: int
+    vocabulary: int
+    organization: int
+    task_fulfillment: int
+
+
+class P1DetailScore(SQLModel):
+    grammar: int
+    visual_relevance_score: int
+
+
+class P1ReviewResponse(SQLModel):
+    overall_score: int
+    feedback: str
+    detail_score: P1DetailScore
+    annotations: list["Annotation"]
+
+
+class Annotation(SQLModel):
+    target_text: str
+    context_before: str
+    type: (
+        Literal["grammar"]
+        | Literal["vocabulary"]
+        | Literal["coherence"]
+        | Literal["mechanics"]
+    )
+    replacement: str | None
+    feedback: str
+
+
 system_prompt_for_topic_p1 = ""
 system_prompt_for_image_p1 = ""
 system_prompt_for_topic_p2 = ""
@@ -97,6 +140,7 @@ themes_for_p2: list[P2Theme] = []
 themes_for_p3: list[P3Theme] = []
 system_prompt_for_review_1 = ""
 system_prompt_for_review_2_3 = ""
+system_prompt_for_summary_topic_1 = ""
 base_user_prompt_for_topic = ""
 base_user_prompt_for_submit_1 = ""
 base_user_prompt_for_submit_2_3 = ""
@@ -111,6 +155,9 @@ with open("assets/topic/p1/image.txt") as file:
 with open("assets/topic/p1/theme.json") as file:
     raw_themes = json.load(file)
     themes_for_p1 = [P1Theme.model_validate(theme) for theme in raw_themes]
+
+with open("assets/topic/p1/summary.txt") as file:
+    system_prompt_for_summary_topic_1 = file.read()
 
 with open("assets/topic/p2/system.txt") as file:
     system_prompt_for_topic_p2 = file.read()
@@ -135,6 +182,9 @@ with open("assets/submit/p2_3/system.txt") as file:
 with open("assets/topic/user.txt") as file:
     base_user_prompt_for_topic = file.read()
 
+with open("assets/submit/p1/user.txt") as file:
+    base_user_prompt_for_submit_1 = file.read()
+
 with open("assets/submit/p2_3/user.txt") as file:
     base_user_prompt_for_submit_2_3 = file.read()
 
@@ -147,18 +197,18 @@ class MessageImageUrlData(BaseModel):
 
 
 class MessageContentText(BaseModel):
-    type: Literal["text"]
+    type: Literal["text"] = Field(default="text")
     text: str
 
 
 class MessageContentImage(BaseModel):
-    type: Literal["image_url"]
+    type: Literal["image_url"] = Field(default="image_url")
     image_url: MessageImageUrlData
 
 
 class BaseUserMessage(BaseModel):
     role: Literal["user", "system"]
-    content: str
+    content: str | list[MessageContentText | MessageContentImage]
 
 
 class BaseRequestFormat(BaseModel):
@@ -198,36 +248,6 @@ class BaseReponse(BaseModel):
     created: int
     model: str
     choices: list[BaseReponseChoice]
-
-
-class ReviewResponse(SQLModel):
-    score_range: tuple[int, int]
-    level_achieved: int
-    overall_feedback: str
-    summary_feedback: str
-    detail_score: "DetailScore"
-    annotations: list["Annotation"]
-    improvement_suggestions: list[str]
-
-
-class DetailScore(SQLModel):
-    grammar: int
-    vocabulary: int
-    organization: int
-    task_fulfillment: int
-
-
-class Annotation(SQLModel):
-    target_text: str
-    context_before: str
-    type: (
-        Literal["grammar"]
-        | Literal["vocabulary"]
-        | Literal["coherence"]
-        | Literal["mechanics"]
-    )
-    replacement: str | None
-    feedback: str
 
 
 def format_message(messages: list[BaseUserMessage]):
@@ -284,7 +304,7 @@ async def generate_topic(part: Literal["1", "2", "3"]):
         keywords = choices(theme.keywords, k=2)
         topic_theme = f"**Opinion:** {opinion}\n**Keywords:** {', '.join(keywords)}"
 
-    for _ in range(5):
+    for _ in range(5):  # Retry 5 times if fail to parse the JSON
         response = await client.post(
             url="/proxy/v1/chat/completions",
             json=BaseRequest(
@@ -321,8 +341,55 @@ async def generate_topic(part: Literal["1", "2", "3"]):
             print(error)
 
 
-async def review(part: Literal["1", "2", "3"], topic: str, submission: str):
-    for _ in range(5):
+async def review_p1(
+    file_path: str, artist_prompt: str, keywords: tuple[str, str], submission: str
+):
+    for _ in range(5):  # Retry 5 times if fail to parse the JSON
+        file_ext = file_path.split(".")[-1]
+        file_url = ""
+        with open(file_path, "rb") as file:
+            file_url = base64.b64encode(file.read()).decode("utf-8")
+            file_url = f"data:image/{file_ext};base64," + file_url
+        response = await client.post(
+            url="/proxy/v1/chat/completions",
+            json=BaseRequest(
+                model=REVIEW_MODEL,
+                messages=[
+                    BaseUserMessage(role="system", content=system_prompt_for_review_2_3),
+                    BaseUserMessage(
+                        role="user",
+                        content=[
+                            MessageContentImage(
+                                image_url=MessageImageUrlData(url=file_url)
+                            ),
+                            MessageContentText(
+                                text=base_user_prompt_for_submit_1.format(
+                                    artist_prompt=artist_prompt,
+                                    keywords=" / ".join(keywords),
+                                    submission=submission,
+                                )
+                            ),
+                        ],
+                    ),
+                ],
+                response_format=BaseRequestFormat(type="json_object"),
+            ).model_dump(),
+        )
+        data = BaseReponse(**(await response.json()))
+        sliced = slice_md(data.choices[0].message.content)
+
+        try:
+            parsed_review = json.loads(sliced)
+            return P1ReviewResponse(**parsed_review)
+
+        except (json.decoder.JSONDecodeError, ValidationError) as error:
+            print(error)
+
+    return None
+
+
+async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
+    for _ in range(5):  # Retry 5 times if fail to parse the JSON
         response = await client.post(
             url="/proxy/v1/chat/completions",
             json=BaseRequest(
@@ -347,6 +414,38 @@ async def review(part: Literal["1", "2", "3"], topic: str, submission: str):
         try:
             parsed_review = json.loads(sliced)
             return ReviewResponse(**parsed_review)
+
+        except (json.decoder.JSONDecodeError, ValidationError) as error:
+            print(error)
+
+    return None
+
+
+async def summary_review_p1(reviews: list[P1ReviewResponse]):
+    for _ in range(5):  # Retry 5 times if fail to parse the JSON
+        response = await client.post(
+            url="/proxy/v1/chat/completions",
+            json=BaseRequest(
+                model=REVIEW_MODEL,
+                messages=[
+                    BaseUserMessage(role="system", content=system_prompt_for_summary_topic_1),
+                    BaseUserMessage(
+                        role="user",
+                        content=json.dumps(
+                            [model.model_dump() for model in reviews],
+                            indent=4
+                        ),
+                    ),
+                ],
+                response_format=BaseRequestFormat(type="json_object"),
+            ).model_dump(),
+        )
+        data = BaseReponse(**(await response.json()))
+        sliced = slice_md(data.choices[0].message.content)
+
+        try:
+            parsed_review = json.loads(sliced)
+            return ReviewResponse(**parsed_review, annotations=[])
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
             print(error)
