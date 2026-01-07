@@ -720,9 +720,14 @@ async def get_submissions_of_topic(topic_id: str, _session: AsyncSession | None 
     return topic.submissions
 
 
+class P1SubmitBody(BaseModel):
+    file: str
+    submission: str
+
+
 async def p1_submit(
     topic_id: str,
-    submissions: list[tuple[str, str]],  # topic question id, submission
+    submissions: list[P1SubmitBody],  # file, submission
     _session: AsyncSession | None = None,
 ):
     async def _inner(session: AsyncSession):
@@ -733,16 +738,23 @@ async def p1_submit(
         submission_id = uuid4().__str__()
         submission = Submission(id=submission_id, topic_id=topic_id)
         answers: list[Answer] = []
-        for question_id, submitted_text in submissions:
+        for submission_ in submissions:
+            question_statement = select(Question).where(Question.file == submission_.file)
+            question = (await session.execute(question_statement)).scalar()
+            if question is None or question.file is None:
+                raise ValueError("question not found")
             question_submission = Answer(
                 submission_id=submission_id,
-                question_id=question_id,
-                content=submitted_text,
+                question_id=question.id,
+                content=submission_.submission,
             )
             answers.append(question_submission)
 
         session.add_all([submission, *answers])
         await session.commit()
+
+        new_submission = await _get_submission(submission.id)
+        return format_submission(new_submission)
 
     return await create_session_and_run(_inner, _session)
 
