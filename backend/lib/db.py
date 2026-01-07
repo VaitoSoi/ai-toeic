@@ -859,7 +859,7 @@ async def _inject_review(id: str, coro: Awaitable[T]) -> tuple[str, T]:
     return (id, await coro)
 
 
-async def _review_p1(submission_id: str, _session: Optional[AsyncSession] = None):
+async def _review_p1(submission_id: str):
     async def _inner(session: AsyncSession):
         submission = await _get_submission(submission_id, session)
         tasks: list[Task[tuple[str, P1ReviewResponse]]] = []
@@ -893,7 +893,7 @@ async def _review_p1(submission_id: str, _session: Optional[AsyncSession] = None
 
         return (responses, overall)
 
-    return await create_session_and_run(_inner, _session)
+    return await create_session_and_run(_inner)
 
 
 async def _update_review_p1(
