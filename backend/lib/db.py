@@ -945,7 +945,9 @@ async def _update_review_p1(
                     improvement_suggestions=response_overall.improvement_suggestions,
                 )
 
-            update_session.add_all([review, *answer_reviews])
+            update_session.add(review)
+            if answer_reviews.__len__():
+                update_session.add_all(answer_reviews)
             if overall_review:
                 update_session.add(overall_review)
             await update_session.commit()
