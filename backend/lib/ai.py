@@ -350,7 +350,7 @@ async def review_p1(
             json=BaseRequest(
                 model=REVIEW_MODEL,
                 messages=[
-                    BaseUserMessage(role="system", content=system_prompt_for_review_2_3),
+                    BaseUserMessage(role="system", content=system_prompt_for_review_1),
                     BaseUserMessage(
                         role="user",
                         content=[
