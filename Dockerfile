@@ -17,7 +17,7 @@ RUN yarn install --immutable
 COPY frontend/ .
 
 # Lint & build
-ENV VITE_BACKEND_URL=""
+ENV VITE_BACKEND_URL="/api"
 RUN yarn lint
 RUN yarn build
 
