@@ -20,18 +20,18 @@ class SubmitBody(BaseModel):
     submission: str
 
 
-@route.get("s", description="Get all submissions")
+@route.get("s", description="Get all submissions", response_model=list[SlicedSubmission])
 async def api_get_submissions():
     return await get_submissions()
 
 
-@route.get("", description="Get a single submission")
+@route.get("", description="Get a single submission", response_model=SlicedSubmission)
 @exception_handler
 async def api_get_submission(id: str):
     return await get_submission(id)
 
 
-@route.post("", description="Submit a submission")
+@route.post("", description="Submit a submission", response_model=SlicedSubmission)
 @exception_handler
 async def api_submit(topic_id: str, body: SubmitBody):
     return await submit(topic_id=topic_id, submitted_text=body.submission)

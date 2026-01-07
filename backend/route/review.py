@@ -1,6 +1,8 @@
+from typing import Optional
+
 from fastapi import APIRouter
 
-from lib.db import get_review, get_review_of_submission, get_reviews, review
+from lib.db import SlicedReview, get_review, get_review_of_submission, get_reviews, review
 from lib.response import exception_handler
 
 route = APIRouter(
@@ -9,12 +11,12 @@ route = APIRouter(
 )
 
 
-@route.get("s", description="Get all reviews")
+@route.get("s", description="Get all reviews", response_model=list[SlicedReview])
 async def api_get_reviews():
     return await get_reviews()
 
 
-@route.get("", description="Get a single review")
+@route.get("", description="Get a single review", response_model=SlicedReview)
 @exception_handler
 async def api_get_review(id: str):
     return await get_review(id)
