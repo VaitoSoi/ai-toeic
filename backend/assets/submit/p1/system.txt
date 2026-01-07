@@ -42,8 +42,8 @@ You must perform a **comprehensive and exhaustive** analysis.
   "overall_score": number, // Integer 0-10
   "feedback": "string", // Concise, actionable overall feedback
   "detail_score": {
-    "grammar_score": number, // Integer 0-10
-    "visual_relevance_score": number // Integer 0-10
+    "grammar": number, // Integer 0-10
+    "visual_relevance": number // Integer 0-10
   },
   "annotations": [
     {

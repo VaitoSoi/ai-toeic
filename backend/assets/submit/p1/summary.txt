@@ -7,7 +7,7 @@ You will receive a list of JSON objects, each object follow this schema:
     "feedback": "string", // Concise, actionable overall feedback
     "detail_score": {
         "grammar_score": number, // Integer 0-10
-        "visual_relevance_score": number // Integer 0-10
+        "visual_relevance": number // Integer 0-10
     },
     "annotations": [
         {
@@ -133,7 +133,7 @@ and the content of test questions.
         "grammar": number, // 0-100 (Average of input 'grammar_score' * 10)
         "vocabulary": number, // 0-100 (Deduct points if 'keyword' errors were frequent)
         "organization": number, // 0-100 (For Part 1, treat this as 'Sentence Structure Variety'. High score if syntax varied, low if repetitive.)
-        "task_fulfillment": number // 0-100 (Average of input 'visual_relevance_score' * 10)
+        "task_fulfillment": number // 0-100 (Average of input 'visual_relevance' * 10)
     },
     "improvement_suggestions": [
         "string", // Specific Tip 1 (e.g., "Review Present Continuous tense for ongoing actions.")
