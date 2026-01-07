@@ -108,7 +108,7 @@ class DetailScore(SQLModel):
 
 class P1DetailScore(SQLModel):
     grammar: int
-    visual_relevance_score: int
+    visual_relevance: int
 
 
 class P1ReviewResponse(SQLModel):

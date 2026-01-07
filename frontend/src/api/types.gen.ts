@@ -73,7 +73,7 @@ export type P1DetailScore = {
     /**
      * Visual Relevance Score
      */
-    visual_relevance_score: number;
+    visual_relevance: number;
 };
 
 /**
