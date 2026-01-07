@@ -34,11 +34,11 @@ api_router.include_router(topic_route)
 
 if not os.path.exists("data/image"):
     os.mkdir("data/image")
-app.mount("/file", StaticFiles(directory="data/image"))
 
 ENV = os.getenv("ENV", "DEV")
 if ENV == "PROD":
     app.include_router(api_router, prefix="/api")
+    app.mount("/api/file", StaticFiles(directory="data/image"))
 
     if os.path.exists("static/assets"):
         app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
@@ -55,6 +55,7 @@ if ENV == "PROD":
         return FileResponse("static/index.html")
 
 else:
+    app.mount("/file", StaticFiles(directory="data/image"))
     app.include_router(api_router)
 
 app.add_middleware(
