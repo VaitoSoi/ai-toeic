@@ -3,7 +3,7 @@ import re
 from asyncio import Task, create_task, gather, get_event_loop
 from datetime import datetime
 from enum import Enum as PyEnum
-from random import choices
+from random import choice
 from traceback import format_exc
 from typing import Any, Awaitable, Callable, Coroutine, Literal, Optional, TypeVar, cast
 from uuid import uuid4
@@ -70,7 +70,7 @@ class Topic(SQLModel, table=True):
     __tablename__ = "topic"  # pyright: ignore[reportAssignmentType]
 
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
-    color: str = SQLField(default_factory=lambda: choices(colors))
+    color: str = SQLField(default_factory=lambda: choice(colors))
 
     status: Status = SQLField(sa_column=Column(SQLEnum(Status)))
 
@@ -79,11 +79,17 @@ class Topic(SQLModel, table=True):
     )
     part: TopicPart = SQLField(sa_column=Column(SQLEnum(TopicPart)))
 
-    questions: list["Question"] = Relationship(back_populates="topic")  # Part 1
+    questions: list["Question"] = Relationship(
+        back_populates="topic", sa_relationship_kwargs={"lazy": "selectin"}
+    )  # Part 1
     summary: Optional[Summary] = SQLField(default=None, sa_type=PydanticJSON(Summary))
 
-    submissions: list["Submission"] = Relationship(back_populates="topic")
-    reviews: list["Review"] = Relationship(back_populates="topic")
+    submissions: list["Submission"] = Relationship(
+        back_populates="topic", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    reviews: list["Review"] = Relationship(
+        back_populates="topic", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
@@ -93,8 +99,10 @@ class Question(SQLModel, table=True):
 
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
-    topic_id: str = SQLField(foreign_key="topic.id")
-    topic: Topic = Relationship(back_populates="questions")
+    topic_id: str = SQLField(foreign_key="topic.id", ondelete="CASCADE")
+    topic: Topic = Relationship(
+        back_populates="questions", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     question: Optional[str] = SQLField(default=None)
 
@@ -102,7 +110,9 @@ class Question(SQLModel, table=True):
     file: Optional[str] = SQLField(default=None)
     keywords: Optional[tuple[str, str]] = SQLField(default=None, sa_column=Column(JSON))
 
-    answers: list["Answer"] = Relationship(back_populates="question")
+    answers: list["Answer"] = Relationship(
+        back_populates="question", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
@@ -141,11 +151,17 @@ class Submission(SQLModel, table=True):
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
     topic_id: str = SQLField(foreign_key="topic.id", ondelete="CASCADE")
-    topic: Topic = Relationship(back_populates="submissions")
+    topic: Topic = Relationship(
+        back_populates="submissions", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
-    answers: list["Answer"] = Relationship(back_populates="submission")
+    answers: list["Answer"] = Relationship(
+        back_populates="submission", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
-    review: Optional["Review"] = Relationship()
+    review: Optional["Review"] = Relationship(
+        back_populates="submission", sa_relationship_kwargs={"lazy": "selectin"}
+    )
     created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
 
@@ -155,10 +171,14 @@ class Answer(SQLModel, table=True):
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
     question_id: str = SQLField(foreign_key="question.id", ondelete="CASCADE")
-    question: Question = Relationship(back_populates="answers")
+    question: Question = Relationship(
+        back_populates="answers", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     submission_id: str = SQLField(foreign_key="submission.id", ondelete="CASCADE")
-    submission: Submission = Relationship(back_populates="answers")
+    submission: Submission = Relationship(
+        back_populates="answers", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     content: str
 
@@ -187,12 +207,23 @@ class Review(SQLModel, table=True):
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
     topic_id: str = SQLField(foreign_key="topic.id", ondelete="CASCADE")
-    topic: Topic = Relationship(back_populates="reviews")
+    topic: Topic = Relationship(
+        back_populates="reviews", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+
+    submission_id: str = SQLField(foreign_key="submission.id", ondelete="CASCADE")
+    submission: Submission = Relationship(
+        back_populates="review", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     status: Status
 
-    overall: Optional["OverallReview"] = Relationship(back_populates="review")
-    answers: Optional[list["AnswerReview"]] = Relationship(back_populates="review")
+    overall: Optional["OverallReview"] = Relationship(
+        back_populates="review", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    answers: Optional[list["AnswerReview"]] = Relationship(
+        back_populates="review", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     created_at: datetime = SQLField(default_factory=lambda: datetime.now())
 
@@ -203,7 +234,9 @@ class OverallReview(SQLModel, table=True):
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
     review_id: str = SQLField(foreign_key="review.id", ondelete="CASCADE")
-    review: Review = Relationship(back_populates="overall")
+    review: Review = Relationship(
+        back_populates="overall", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     score_range: tuple[int, int] = SQLField(sa_column=Column(JSON))
     level_achieved: int
@@ -220,10 +253,12 @@ class AnswerReview(SQLModel, table=True):
     id: str = SQLField(primary_key=True, default_factory=lambda: uuid4().__str__())
 
     review_id: str = SQLField(foreign_key="review.id", ondelete="CASCADE")
-    review: Review = Relationship(back_populates="answers")
+    review: Review = Relationship(
+        back_populates="answers", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     answer_id: str = SQLField(foreign_key="answer.id", ondelete="CASCADE")
-    answer: Answer = Relationship()
+    answer: Answer = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
 
     overall_score: int
     feedback: str
@@ -419,15 +454,7 @@ TOPIC
 
 async def get_topics(all: bool = False, _session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
-        statement = (
-            select(Topic)
-            .order_by(desc(Topic.created_at))
-            .options(
-                selectinload(Topic.submissions).selectinload(Submission.review),  # type: ignore
-                selectinload(Topic.reviews),  # type: ignore
-                selectinload(Topic.questions),  # type: ignore
-            )
-        )
+        statement = select(Topic).order_by(desc(Topic.created_at))
         if not all:
             statement = statement.where(Topic.status == Status.done)
         topics = list((await session.execute(statement)).scalars().all())
@@ -438,16 +465,7 @@ async def get_topics(all: bool = False, _session: AsyncSession | None = None):
 
 async def _get_topic(id: str, _session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
-        statement = (
-            select(Topic)
-            .where(Topic.id == id)
-            .order_by(desc(Topic.created_at))
-            .options(
-                selectinload(Topic.submissions).selectinload(Submission.review),  # type: ignore
-                selectinload(Topic.reviews),  # type: ignore
-                selectinload(Topic.questions),  # type: ignore
-            )
-        )
+        statement = select(Topic).where(Topic.id == id).order_by(desc(Topic.created_at))
         topic = (await session.execute(statement)).scalar()
         if not topic:
             raise TopicNotFound(id)
@@ -668,11 +686,7 @@ SUBMISSION
 
 async def get_submissions(_session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
-        statement = (
-            select(Submission)
-            .order_by(desc(Submission.created_at))
-            .options(selectinload(Submission.topic), selectinload(Submission.review))  # type: ignore
-        )
+        statement = select(Submission).order_by(desc(Submission.created_at))
         submissions = list((await session.execute(statement)).scalars().all())
         return [format_submission(submission) for submission in submissions]
 
@@ -685,7 +699,6 @@ async def _get_submission(id: str, _session: AsyncSession | None = None):
             select(Submission)
             .where(Submission.id == id)
             .order_by(desc(Submission.created_at))
-            .options(selectinload(Submission.topic), selectinload(Submission.review))  # type: ignore
         )
         submission = (await session.execute(statement)).scalar()
         if not submission:
@@ -798,10 +811,7 @@ async def get_reviews(_session: AsyncSession | None = None):
 async def _get_review(id: str, _session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
         statement = (
-            select(Review)
-            .where(Review.id == id)
-            .order_by(desc(Review.created_at))
-            .options(selectinload(Review.topic), selectinload(Review.submission))  # type: ignore
+            select(Review).where(Review.id == id).order_by(desc(Review.created_at))
         )
         review = (await session.execute(statement)).scalar()
         if not review:
