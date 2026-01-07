@@ -1003,6 +1003,7 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
         review_obj = Review(
             id=id,
             topic_id=topic.id,
+            submission_id=submission_id,
             status=Status.pending,
         )
 
