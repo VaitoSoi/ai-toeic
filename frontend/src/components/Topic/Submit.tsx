@@ -229,15 +229,15 @@ function UseP1Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: 
 
     useEffect(() => setTimeLeft(8 * 60), []);
 
-    // useEffect(() => {
-    //     submissionTimer.current = setTimeout(
-    //         () => timeLeft > 0
-    //             ? setTimeLeft(timeLeft => timeLeft -= 1)
-    //             : undefined,
-    //         1000
-    //     );
-    //     return () => clearTimeout(submissionTimer.current);
-    // }, [timeLeft]);
+    useEffect(() => {
+        submissionTimer.current = setTimeout(
+            () => timeLeft > 0
+                ? setTimeLeft(timeLeft => timeLeft -= 1)
+                : undefined,
+            1000
+        );
+        return () => clearTimeout(submissionTimer.current);
+    }, [timeLeft]);
 
     const send = useCallback(async () => {
         if (!topic) return;
