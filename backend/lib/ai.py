@@ -333,6 +333,7 @@ async def generate_topic(part: Literal["1", "2", "3"]):
                 return P3Response.model_validate(parsed_topic)
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
+            print(json.dumps(data, indent=4))
             print(error)
 
 
@@ -378,6 +379,7 @@ async def review_p1(
             return P1ReviewResponse(**parsed_review)
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
+            print(json.dumps(data, indent=4))
             print(error)
 
     return None
@@ -411,6 +413,7 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
             return ReviewResponse(**parsed_review)
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
+            print(json.dumps(data, indent=4))
             print(error)
 
     return None
@@ -444,6 +447,7 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
             return ReviewResponse(**parsed_review, annotations=[])
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
+            print(json.dumps(data, indent=4))
             print(error)
 
     return None
