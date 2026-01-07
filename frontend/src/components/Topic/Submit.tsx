@@ -141,7 +141,7 @@ function UseP23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus:
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const submissionTimer = useRef<any>(null);
 
-    useEffect(() => setTimeLeft(topic.part == "2" ? 10 * 60 : 30 * 60), []);
+    useEffect(() => setTimeLeft(topic.part == "2" ? 10 * 60 : 30 * 60), [topic.part]);
 
     useEffect(() => {
         submissionTimer.current = setTimeout(
