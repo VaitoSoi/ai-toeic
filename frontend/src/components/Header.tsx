@@ -6,7 +6,7 @@ function Header() {
             <PenTool />
             <a href="/">TOEIC Writing Platform</a>
         </p>
-        <span className="hidden lg:flex lg:text-2xl font-normal lg:ml-auto">
+        <span className="hidden gap-1 lg:flex lg:text-xl lg:ml-auto uppercase font-bold text-slate-500">
             By <a
                 href="https://github.com/vaitosoi"
                 className="hover:text-blue-500 transition-all duration-200"
