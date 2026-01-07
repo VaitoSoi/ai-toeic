@@ -11,7 +11,7 @@ import { BACKEND_URL } from "@/api/client.gen";
 function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData?: SlicedTopic }) {
     const navigator = useNavigate();
     const [topic, setTopic] = useState<SlicedTopic | undefined>(preloadedData || undefined);
-    const [status, setStatus] = useState<"error" | "not_confirmed" | "writing" | "sending" | "sent">("writing");
+    const [status, setStatus] = useState<"error" | "not_confirmed" | "writing" | "sending" | "sent">("not_confirmed");
     const topicReloadTimer = useRef<any>(null);
 
     const getTopic = useCallback(async () => {
