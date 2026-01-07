@@ -13,5 +13,5 @@ import type { ClientOptions as ClientOptions2 } from './types.gen';
  */
 export type CreateClientConfig<T extends ClientOptions = ClientOptions2> = (override?: Config<ClientOptions & T>) => Config<Required<ClientOptions> & T>;
 
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL == undefined ?  "http://localhost:8000" : import.meta.env.VITE_BACKEND_URL;
 export const client = createClient(createConfig<ClientOptions2>({ baseURL: BACKEND_URL }));
