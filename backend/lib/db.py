@@ -4,7 +4,7 @@ from asyncio import Task, create_task, gather, get_event_loop
 from datetime import datetime
 from enum import Enum as PyEnum
 from random import choice
-from traceback import format_exc
+from traceback import format_exc, format_exception
 from typing import Any, Awaitable, Callable, Coroutine, Literal, Optional, TypeVar, cast
 from uuid import uuid4
 
