@@ -262,7 +262,7 @@ class AnswerReview(SQLModel, table=True):
     overall_score: int
     feedback: str
     detail_score: P1DetailScore = SQLField(sa_column=Column(JSON))
-    annotations: list[Annotation]
+    annotations: list[Annotation] = SQLField(sa_type=PydanticListJSON(Annotation))
 
 
 class SlicedReview(BaseModel):
