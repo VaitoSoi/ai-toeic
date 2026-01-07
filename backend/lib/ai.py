@@ -151,9 +151,6 @@ with open("assets/topic/p1/theme.json") as file:
     raw_themes = json.load(file)
     themes_for_p1 = [P1Theme.model_validate(theme) for theme in raw_themes]
 
-with open("assets/topic/p1/summary.txt") as file:
-    system_prompt_for_summary_topic_1 = file.read()
-
 with open("assets/topic/p2/system.txt") as file:
     system_prompt_for_topic_p2 = file.read()
 
@@ -170,6 +167,9 @@ with open("assets/topic/p3/theme.json") as file:
 
 with open("assets/submit/p1/system.txt") as file:
     system_prompt_for_review_1 = file.read()
+
+with open("assets/submit/p1/summary.txt") as file:
+    system_prompt_for_summary_topic_1 = file.read()
 
 with open("assets/submit/p2_3/system.txt") as file:
     system_prompt_for_review_2_3 = file.read()
