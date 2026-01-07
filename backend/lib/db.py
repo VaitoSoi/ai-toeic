@@ -909,7 +909,7 @@ async def _update_review_p1(
 ):
     try:
         task, review_id = id.split(":")
-        if task != "review_p2_3":
+        if task != "review_p1":
             return
 
         async def _update_inner(update_session: AsyncSession):
