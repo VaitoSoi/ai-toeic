@@ -265,12 +265,15 @@ async def generate_image(prompt: str):
             image_config=ImageConfig(aspect_ratio="5:4"),
         ).model_dump(),
     )
-    data = BaseReponse(**(await response.json()))
-    return (
-        data.choices[0].message.images[0].image_url.url
-        if data.choices[0].message.images
-        else None
-    )
+    try:
+        data = BaseReponse(**(await response.json()))
+        return (
+            data.choices[0].message.images[0].image_url.url
+            if data.choices[0].message.images
+            else None
+        )
+    except ValidationError:
+        print(json.dumps(await response.json(), indent=4))
 
 
 async def generate_topic(part: Literal["1", "2", "3"]):
@@ -320,7 +323,12 @@ async def generate_topic(part: Literal["1", "2", "3"]):
             ).model_dump(),
         )
 
-        data = BaseReponse(**(await response.json()))
+        try:
+            data = BaseReponse(**(await response.json()))
+        except ValidationError:
+            print(json.dumps(await response.json(), indent=4))
+            continue
+
         sliced = slice_md(data.choices[0].message.content)
 
         try:
@@ -371,7 +379,13 @@ async def review_p1(
                 response_format=BaseRequestFormat(type="json_object"),
             ).model_dump(),
         )
-        data = BaseReponse(**(await response.json()))
+
+        try:
+            data = BaseReponse(**(await response.json()))    
+        except ValidationError:
+            print(json.dumps(await response.json(), indent=4))
+            continue
+
         sliced = slice_md(data.choices[0].message.content)
 
         try:
@@ -405,7 +419,12 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
                 response_format=BaseRequestFormat(type="json_object"),
             ).model_dump(),
         )
-        data = BaseReponse(**(await response.json()))
+        try:
+            data = BaseReponse(**(await response.json()))
+        except ValidationError:
+            print(json.dumps(await response.json(), indent=4))
+            continue
+
         sliced = slice_md(data.choices[0].message.content)
 
         try:
@@ -439,7 +458,12 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
                 response_format=BaseRequestFormat(type="json_object"),
             ).model_dump(),
         )
-        data = BaseReponse(**(await response.json()))
+        try:
+            data = BaseReponse(**(await response.json()))    
+        except ValidationError:
+            print(json.dumps(await response.json(), indent=4))
+            continue
+        
         sliced = slice_md(data.choices[0].message.content)
 
         try:
