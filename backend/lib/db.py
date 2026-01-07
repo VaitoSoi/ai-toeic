@@ -106,7 +106,7 @@ class Question(SQLModel, table=True):
     question: Optional[str] = SQLField(default=None)
 
     artist_prompt: Optional[str] = SQLField(default=None)
-    file: Optional[str] = SQLField(default=None)
+    file: Optional[str] = SQLField(default=None, unique=True)
     keywords: Optional[tuple[str, str]] = SQLField(default=None, sa_column=Column(JSON))
 
     answers: list["Answer"] = Relationship(
