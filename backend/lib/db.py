@@ -492,6 +492,7 @@ async def _get_question(id, _session: AsyncSession | None = None):
 
 class CombinedP1Response(BaseModel):
     keywords: tuple[str, str]
+    artist_prompt: str
     image_url: str
 
 
@@ -510,6 +511,7 @@ async def _create_question_p1():
     return CombinedP1Response(
         keywords=prompt_response.keywords,
         image_url=image_url,
+        artist_prompt=prompt_response.artist_prompt
     )
 
 
@@ -549,6 +551,7 @@ async def _update_topic_p1(
 
                     question = Question(
                         topic_id=topic.id,
+                        artist_prompt=response.artist_prompt,
                         keywords=response.keywords,
                         file=filename,
                     )
