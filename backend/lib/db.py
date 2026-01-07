@@ -891,6 +891,7 @@ async def _update_review_p1(
                 review.status = Status.failed
             else:
                 review.status = Status.done
+
                 review_responses, response_overall = response
                 for answer_id, review_response in review_responses:
                     answer_reviews.append(
@@ -903,7 +904,6 @@ async def _update_review_p1(
                             annotations=review_response.annotations,
                         )
                     )
-
                 overall_review = OverallReview(
                     review_id=review.id,
                     score_range=response_overall.score_range,

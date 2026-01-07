@@ -19,10 +19,14 @@ async def api_get_reviews():
 async def api_get_review(id: str):
     return await get_review(id)
 
-@route.get("/of", description="Get review of a Submission")
+
+@route.get(
+    "/of", description="Get review of a Submission", response_model=Optional[SlicedReview]
+)
 @exception_handler
 async def api_get_review_of_submission(submission_id: str):
     return await get_review_of_submission(submission_id)
+
 
 @route.post("", description="Request a review, return review id")
 @exception_handler

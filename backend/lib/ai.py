@@ -121,12 +121,7 @@ class P1ReviewResponse(SQLModel):
 class Annotation(SQLModel):
     target_text: str
     context_before: str
-    type: (
-        Literal["grammar"]
-        | Literal["vocabulary"]
-        | Literal["coherence"]
-        | Literal["mechanics"]
-    )
+    type: Literal["grammar", "vocabulary", "coherence", "mechanics", "suggestion"]
     replacement: str | None
     feedback: str
 
@@ -428,12 +423,13 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
             json=BaseRequest(
                 model=REVIEW_MODEL,
                 messages=[
-                    BaseUserMessage(role="system", content=system_prompt_for_summary_topic_1),
+                    BaseUserMessage(
+                        role="system", content=system_prompt_for_summary_topic_1
+                    ),
                     BaseUserMessage(
                         role="user",
                         content=json.dumps(
-                            [model.model_dump() for model in reviews],
-                            indent=4
+                            [model.model_dump() for model in reviews], indent=4
                         ),
                     ),
                 ],
