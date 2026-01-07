@@ -3,6 +3,7 @@ FROM node:24-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
+
 # For yarn
 RUN corepack enable
 
@@ -16,6 +17,7 @@ RUN yarn install --immutable
 COPY frontend/ .
 
 # Lint & build
+ENV VITE_BACKEND_URL="/"
 RUN yarn lint
 RUN yarn build
 
