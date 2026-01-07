@@ -885,7 +885,13 @@ async def _review_p1(submission_id: str):
                 )
             )
 
-        responses = await gather(*tasks)
+        raw_responses = await gather(*tasks, return_exceptions=True)
+        responses = []
+        for response in raw_responses:
+            if isinstance(response, tuple):
+                responses.append(response)
+            else:
+                print("".join(format_exception(response)))
         overall = cast(
             ReviewResponse,
             await summary_review_p1([response[1] for response in responses]),
