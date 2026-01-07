@@ -1014,7 +1014,7 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
                 callback=_update_review_p1,
                 event_loop=get_event_loop(),
             )
-        elif topic.part.value in [TopicPart.II, TopicPart.III]:
+        elif topic.part in [TopicPart.II, TopicPart.III]:
             answer = submission.answers[0].content
             add_task(
                 ai_review_p2_3(
