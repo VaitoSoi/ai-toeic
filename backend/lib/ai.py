@@ -251,7 +251,7 @@ def format_message(messages: list[BaseUserMessage]):
 
 async def generate_image(prompt: str):
     response = await client.post(
-        url="/proxy/v1/chat/completions",
+        url="chat/completions",
         json=BaseImageRequest(
             model=ARTIST_MODEL,
             messages=[
@@ -304,7 +304,7 @@ async def generate_topic(part: Literal["1", "2", "3"]):
 
     for _ in range(5):  # Retry 5 times if fail to parse the JSON
         response = await client.post(
-            url="/proxy/v1/chat/completions",
+            url="chat/completions",
             json=BaseRequest(
                 model=QUESTION_MODEL,
                 messages=[
@@ -355,7 +355,7 @@ async def review_p1(
             file_url = base64.b64encode(file.read()).decode("utf-8")
             file_url = f"data:image/{file_ext};base64," + file_url
         response = await client.post(
-            url="/proxy/v1/chat/completions",
+            url="chat/completions",
             json=BaseRequest(
                 model=REVIEW_MODEL,
                 messages=[
@@ -402,7 +402,7 @@ async def review_p1(
 async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
     for _ in range(5):  # Retry 5 times if fail to parse the JSON
         response = await client.post(
-            url="/proxy/v1/chat/completions",
+            url="chat/completions",
             json=BaseRequest(
                 model=REVIEW_MODEL,
                 messages=[
@@ -441,7 +441,7 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
 async def summary_review_p1(reviews: list[P1ReviewResponse]):
     for _ in range(5):  # Retry 5 times if fail to parse the JSON
         response = await client.post(
-            url="/proxy/v1/chat/completions",
+            url="chat/completions",
             json=BaseRequest(
                 model=REVIEW_MODEL,
                 messages=[
