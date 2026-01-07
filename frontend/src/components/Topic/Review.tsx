@@ -1,13 +1,14 @@
 import { BookOpen, Bug, ChevronLeft, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BarLoader } from "react-spinners";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
-import { apiGetReview, apiGetReviewOf, apiGetSubmission, apiRequestReview, type Annotation as ReviewAnnotation, type SlicedReview } from "@/api";
+import { apiGetReview, apiGetReviewOf, apiGetSubmission, apiGetTopic, apiRequestReview, type SlicedSubmission, type Annotation as ReviewAnnotation, type SlicedReview, type SlicedTopic } from "@/api";
 import axios from "axios";
 import { error } from "../Toast";
 import { useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "../ui/checkbox";
+import { BACKEND_URL } from "@/api/client.gen";
 
 type Annotation = (
     {
@@ -29,15 +30,18 @@ function Review({ submissionId }: { submissionId: string }) {
 
     const [reviewId, setReviewId] = useState<string>();
     const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error">("reviewing");
-    const [review, setReview] = useState<SlicedReview & { submission: string }>();
+    const [topic, setTopic] = useState<SlicedTopic>();
+    const [submission, setSubmission] = useState<SlicedSubmission>();
+    const [review, setReview] = useState<SlicedReview>();
+    const interval = useRef<any>(null);
+
     const [currentAnnotation, setCurrentAnnotation] = useState<Annotation | null>(null);
     const [clickToReveal, setCTR] = useState<boolean>(false);
-    const interval = useRef<any>(null);
 
     const getReviewId = useCallback(async () => {
         try {
             const response = await apiGetReviewOf({ query: { submission_id: submissionId } });
-            if (!response.data)
+            if (!response.data || !response.data!.id)
                 return setStatus("no_review");
             setReviewId(response.data.id);
             setStatus("reviewing");
@@ -55,7 +59,8 @@ function Review({ submissionId }: { submissionId: string }) {
     const getSubmission = useCallback(async () => {
         try {
             const response = await apiGetSubmission({ query: { id: submissionId } });
-            return response.data;
+            if (!response.data) return setStatus("error");
+            setSubmission(response.data);
         } catch (err) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
@@ -65,6 +70,21 @@ function Review({ submissionId }: { submissionId: string }) {
                 setStatus("error");
         }
     }, [submissionId, navigator]);
+    const getTopic = useCallback(async () => {
+        if (!review) return;
+        try {
+            const response = await apiGetTopic({ query: { id: review!.topic_id } });
+            if (!response.data) return setStatus("error");
+            setTopic(response.data);
+        } catch (err) {
+            console.error(err);
+            if (axios.isAxiosError(err) && err.status == 404) {
+                error("Submission or review not found");
+                navigator("/");
+            } else
+                setStatus("error");
+        }
+    }, [review, navigator]);
     const getReview = useCallback(async () => {
         if (!reviewId) return;
         try {
@@ -76,11 +96,7 @@ function Review({ submissionId }: { submissionId: string }) {
                 return setStatus("failed");
             if (!response.data.overall)
                 return setStatus("error");
-            const submission = await getSubmission();
-            setReview({
-                ...response.data,
-                submission: submission!.answers![0].content
-            });
+            setReview(response.data);
             setStatus('done');
             clearInterval(interval.current);
         } catch (err) {
@@ -91,20 +107,32 @@ function Review({ submissionId }: { submissionId: string }) {
             } else
                 setStatus("error");
         }
-    }, [reviewId, getSubmission, navigator]);
+    }, [reviewId, navigator]);
+
     useEffect(() => {
         if (!reviewId) return;
         getReview();
         interval.current = setInterval(() => void getReview(), 5000);
         return () => clearInterval(interval.current);
     }, [reviewId, getReview]);
+    
+    useEffect(() => {
+        if (status === 'done' && review && !topic) {
+            getTopic();
+        }
+    }, [status, review, topic, getTopic]);
+    useEffect(() => {
+        if (status === 'done' && !submission) {
+            getSubmission();
+        }
+    }, [status, submission, getSubmission]);
     useEffect(() => {
         if (status == "error" || status == "done" || status == "failed")
             clearInterval(interval.current);
     }, [status]);
     useEffect(() => {
         if (!review) return;
-        const timer = setTimeout(() => setMounted(true), 100);
+        const timer = setTimeout(() => setMounted(true), 100); // The appear effect :D
         return () => clearTimeout(timer);
     }, [review]);
 
@@ -123,17 +151,16 @@ function Review({ submissionId }: { submissionId: string }) {
         }
     }, [submissionId, navigator]);
 
-    const annotations = useMemo<Annotation[]>(() => {
-        if (!review || !review.overall) return [];
-        if (!review.overall.annotations) return [];
-        if (!review.overall.annotations.length) return [{ key: "0", text: review.submission, isAnnotation: false }];
+    const annotations = useCallback((submission: string, reviewAnnotations: ReviewAnnotation[]): Annotation[] => {
+        if (!review) return [];
+        if (!reviewAnnotations) return [];
+        if (!reviewAnnotations.length) return [{ key: "0", text: submission, isAnnotation: false }];
         const annotations: Annotation[] = [];
         let lastIndex = 0;
-        const submission = review.submission;
-        for (const annotation of review.overall.annotations) {
+        for (const annotation of reviewAnnotations) {
             const uniqueSearchPhrase = `${annotation.context_before} ${annotation.target_text}`;
             // Find the index in the real string
-            const matchIndex = review.submission.indexOf(uniqueSearchPhrase);
+            const matchIndex = submission.indexOf(uniqueSearchPhrase);
             if (matchIndex == -1) continue;
             // The actual start index of the error is the match index + context length + 1 (for space)
             const startIndex = matchIndex + annotation.context_before.length + 1;
@@ -157,10 +184,10 @@ function Review({ submissionId }: { submissionId: string }) {
             });
             lastIndex = endIndex;
         }
-        if (lastIndex < review.submission.length - 1)
+        if (lastIndex < submission.length - 1)
             annotations.push({
-                key: `${lastIndex}-${review.submission.length - 1}`,
-                text: submission.slice(lastIndex, review.submission.length - 1),
+                key: `${lastIndex}-${submission.length - 1}`,
+                text: submission.slice(lastIndex, submission.length - 1),
                 isAnnotation: false
             });
         return annotations;
@@ -217,9 +244,9 @@ function Review({ submissionId }: { submissionId: string }) {
                                 >Review now</div>
                             </div>
                         </div>
-        ) : !review
+        ) : !review || !topic || !submission
             ? <div className="m-auto flex flex-col items-center gap-5">
-                <h1 className="text-3xl font-bold">Loading review</h1>
+                <h1 className="text-3xl font-bold">Loading data</h1>
                 <BarLoader width={300} />
             </div>
             : <div className="lg:mx-auto my-5 lg:my-10 w-full lg:w-4/5 h-fit flex flex-col gap-5">
@@ -317,33 +344,57 @@ function Review({ submissionId }: { submissionId: string }) {
                             Click to reveal
                         </label>
                     </div>
-                    <p>{annotations.map((annotation) => annotation.isAnnotation
-                        ? clickToReveal
-                            ? <span
-                                key={annotation.key}
-                                className={cn(
-                                    mounted ? annotation.color : "",
-                                    "whitespace-pre-wrap transition-all ease-in-out duration-500"
-                                )}
-                                onClick={() => setCurrentAnnotation(annotation)}
-                            >{annotation.text}</span>
-                            : <HoverCard>
-                                <HoverCardTrigger asChild><span
-                                    key={annotation.key}
-                                    className={cn(
-                                        mounted ? annotation.color : "",
-                                        "whitespace-pre-wrap transition-all ease-in-out duration-500"
-                                    )}
-                                >{annotation.text}</span></HoverCardTrigger>
-                                <HoverCardContent className="w-80">
-                                    <p className="text-green-500">{annotation.replacement}</p>
-                                    <div className="w-full border-t-2" />
-                                    <p><span className="font-bold">Type:</span> {annotation.type}</p>
-                                    <p><span className="font-bold">Feedback:</span> {annotation.feedback}</p>
-                                </HoverCardContent>
-                            </HoverCard>
-                        : <span key={annotation.key} className=" whitespace-pre-wrap">{annotation.text}</span>
-                    )}</p>
+                    {topic?.part == "1"
+                        ? <div className="size-full flex flex-col gap-5 pt-5 px-5">{
+                            submission.answers!.map(val => {
+                                const question = topic.questions!.find(quesionVal => quesionVal.id == val.question_id);
+                                const answerReview = review.answers!.find(answerVal => answerVal.answer_id == val.id);
+                                if (!question || !answerReview) return;
+                                return <div className="flex flex-row gap-10 items-center p-5 rounded-md border-2">
+                                    <img
+                                        className="w-1/5 rounded-md"
+                                        src={`${BACKEND_URL}/file/${question.file}`}
+                                    />
+                                    <div className="w-2/5">
+                                        <h2 className="font-bold text-xl text-slate-700 uppercase">Feedback</h2>
+                                        <p>{answerReview.feedback}</p>
+                                        <h2 className="font-bold text-xl text-slate-700 uppercase">Correction</h2>
+                                        <UseAnnotation
+                                            annotations={annotations(val.content, answerReview.annotations!)}
+                                            clickToReveal={clickToReveal}
+                                            mounted={mounted}
+                                            setCurrentAnnotation={setCurrentAnnotation}
+                                        />
+                                    </div>
+                                    <div className="w-2/5 flex flex-2 gap-3 flex-col">
+                                        <h1 className="font-bold text-2xl text-slate-700 uppercase">Details</h1>
+                                        <div className="w-full flex flex-col gap-5">{
+                                            [
+                                                { title: "Grammar", score: answerReview.details.grammar, icon: PenTool, bg: "bg-red-500" },
+                                                { title: "Visual Relevance", score: answerReview.details.visual_relevance, icon: BookOpen, bg: "bg-teal-400" },
+                                            ].map(val => <div className="flex flex-col w-full gap-2">
+                                                <h2 className="text-xl flex flex-row items-center gap-2"><val.icon /> <span className="font-semibold">{val.title}</span> {val.score}</h2>
+                                                <div className="w-full h-2 rounded-full bg-slate-200">
+                                                    <div
+                                                        className={`h-2 rounded-full ${val.bg} transition-all ease-in-out duration-1000`}
+                                                        style={{
+                                                            width: mounted ? `${val.score * 10}%` : '0%'
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>)
+                                        }</div>
+                                    </div>
+                                </div>;
+                            })
+                        }</div>
+                        : <UseAnnotation
+                            annotations={annotations(submission.answers![0].content, review.overall!.annotations!)}
+                            clickToReveal={clickToReveal}
+                            mounted={mounted}
+                            setCurrentAnnotation={setCurrentAnnotation}
+                        />
+                    }
                 </div>
                 {review.overall!.improvement_suggestions && review.overall!.improvement_suggestions.length &&
                     <div className="px-5 lg:py-5 lg:border-2 rounded-md h-fit text-xl">
@@ -355,6 +406,39 @@ function Review({ submissionId }: { submissionId: string }) {
                 }
             </div>
     }</div>;
+}
+
+function UseAnnotation({
+    annotations, clickToReveal, mounted, setCurrentAnnotation }:
+    { annotations: Annotation[], clickToReveal: boolean, mounted: boolean, setCurrentAnnotation: (obj: any) => any }
+) {
+    return <p>{annotations.map((annotation) => annotation.isAnnotation
+        ? clickToReveal
+            ? <span
+                key={annotation.key}
+                className={cn(
+                    mounted ? annotation.color : "",
+                    "whitespace-pre-wrap transition-all ease-in-out duration-500"
+                )}
+                onClick={() => setCurrentAnnotation(annotation)}
+            >{annotation.text}</span>
+            : <HoverCard>
+                <HoverCardTrigger asChild><span
+                    key={annotation.key}
+                    className={cn(
+                        mounted ? annotation.color : "",
+                        "whitespace-pre-wrap transition-all ease-in-out duration-500"
+                    )}
+                >{annotation.text}</span></HoverCardTrigger>
+                <HoverCardContent className="w-80">
+                    <p className="text-green-500">{annotation.replacement}</p>
+                    <div className="w-full border-t-2" />
+                    <p><span className="font-bold">Type:</span> {annotation.type}</p>
+                    <p><span className="font-bold">Feedback:</span> {annotation.feedback}</p>
+                </HoverCardContent>
+            </HoverCard>
+        : <span key={annotation.key} className=" whitespace-pre-wrap">{annotation.text}</span>
+    )}</p>;
 }
 
 export default Review;

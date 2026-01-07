@@ -2,11 +2,12 @@ import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { error, success } from "../Toast";
 import { useNavigate } from "react-router";
-import { ChevronLeft, Mail, NotebookText, Plus, Trash, History, Calendar, ChevronRight } from "lucide-react";
+import { ChevronLeft, Mail, NotebookText, Plus, Trash, History, Calendar, ChevronRight, Image } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
 import Markdown from "react-markdown";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { apiDeleteTopic, apiGetTopic, type SlicedTopic } from "@/api";
+import { BACKEND_URL } from "@/api/client.gen";
 
 function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData?: SlicedTopic }) {
     const navigator = useNavigate();
@@ -59,11 +60,22 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         <div className="flex flex-col lg:flex-row w-full gap-3">
                             <div className="flex flex-row items-center gap-5">
                                 <div className="size-fit rounded-xl p-5 bg-slate-300">
-                                    {topic.part == "2" ? <Mail strokeWidth={1.9} className="size-10" /> : <NotebookText strokeWidth={1.9} className="size-10" />}
+                                    {topic.part == "1"
+                                        ? <Image strokeWidth={1.9} className="size-10" />
+                                        : topic.part == "2"
+                                            ? <Mail strokeWidth={1.9} className="size-10" />
+                                            : <NotebookText strokeWidth={1.9} className="size-10" />
+                                    }
                                 </div>
                                 <div>
-                                    <h1 className="text-xl lg:text-2xl font-bold">{topic.summary?.summary}</h1>
-                                    <p className="text-lg lg:text-xl">{topic.part == "2" ? "P2 - Response to an email" : "P3 - Opinion essay"}</p>
+                                    <h1 className="text-xl lg:text-2xl font-bold">{topic.part == "1" ? "Describe given images" : topic.summary?.summary}</h1>
+                                    <p className="text-lg lg:text-xl">{
+                                        topic.part == "1"
+                                            ? "Disclaimer: All the images are AI-generated"
+                                            : topic.part == "2"
+                                                ? "P2 - Response to an email"
+                                                : "P3 - Opinion essay"
+                                    }</p>
                                 </div>
                             </div>
                             <div className="flex flex-row gap-2 ml-auto mr-5">
@@ -81,9 +93,20 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                                 </AlertDialogTrigger>
                             </div>
                         </div>
-                        <div className="w-full text-lg whitespace-pre-wrap">
-                            <Markdown>{topic.questions?.[0].question}</Markdown>
-                        </div>
+                        {topic.part == "1"
+                            ? <div className="overflow-y-hidden overflow-x-auto flex flex-row gap-5">
+                                {topic.questions?.map(val => <div className="flex flex-col items-center py-1">
+                                    <img
+                                        className="rounded-md"
+                                        src={`${BACKEND_URL}/file/${val.file}`}
+                                    />
+                                    <p className="text-lg">{val.keywords!.join(" / ")}</p>
+                                </div>)}
+                            </div>
+                            : <div className="w-full text-lg whitespace-pre-wrap">
+                                <Markdown>{topic.questions?.[0].question}</Markdown>
+                            </div>
+                        }
                     </div>
                 </div>
                 <div className="flex flex-col gap-3">

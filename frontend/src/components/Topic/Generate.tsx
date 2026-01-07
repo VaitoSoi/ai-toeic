@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Mail, NotebookText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Image, Mail, NotebookText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { error } from "../Toast";
@@ -6,7 +6,7 @@ import { apiCreateTopic } from "@/api";
 
 function Generate() {
     const navigator = useNavigate();
-    const [part, setPart] = useState<"2" | "3">();
+    const [part, setPart] = useState<"1" | "2" | "3">();
 
     const generateTopic = useCallback(async () => {
         try {
@@ -24,7 +24,7 @@ function Generate() {
             navigator("/");
         }
     }, [part, navigator]);
-    useEffect(() => part == "2" || part == "3" ? void generateTopic() : undefined, [part, generateTopic]);
+    useEffect(() => part ? void generateTopic() : undefined, [part, generateTopic]);
 
     return <div className="h-full w-full flex">
         <div className="m-auto w-150">
@@ -39,6 +39,21 @@ function Generate() {
                 <h1 className="text-2xl font-bold">Pick a part</h1>
                 <h2 className="text-xl font-normal text-slate-400">Select the TOEIC writing part you want to practice:</h2>
                 <div className="w-full mt-4 flex flex-col gap-2">
+                    <div
+                        className="w-full p-5 flex flex-row items-center gap-5 border-2 rounded-md hover:bg-violet-300/20 hover:border-violet-300 transition-all duration-200 group cursor-pointer"
+                        onClick={() => setPart("1")}
+                    >
+                        <div className="p-3 rounded-full bg-violet-100 text-violet-600 group-hover:bg-violet-200 transition-colors">
+                            <Image className="size-10" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold group-hover:text-violet-800 transition-all duration-200">Part 1</h1>
+                            <h2 className="text-lg font-normal text-slate-400">Question 1 - 5 • 8 minutes</h2>
+                        </div>
+                        <ChevronRight
+                            className="hidden lg:flex ml-auto size-10 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all  duration-200"
+                        />
+                    </div>
                     <div
                         className="w-full p-5 flex flex-row items-center gap-5 border-2 rounded-md hover:bg-green-300/20 hover:border-green-300 transition-all duration-200 group cursor-pointer"
                         onClick={() => setPart("2")}
