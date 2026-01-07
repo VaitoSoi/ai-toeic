@@ -771,7 +771,7 @@ async def p23_submit(
             raise ValueError("wrong function")
 
         submission_id = uuid4().__str__()
-        submission = Submission(topic_id=topic.id)
+        submission = Submission(id=submission_id, topic_id=topic.id)
         answer = Answer(
             submission_id=submission_id,
             question_id=cast(list[Question], topic.questions)[0].id,
