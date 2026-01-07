@@ -1009,7 +1009,7 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
 
         if topic.part == TopicPart.I:
             add_task(
-                _review_p1(submission_id, session),
+                _review_p1(submission_id),
                 f"review_p1:{id}",
                 callback=_update_review_p1,
                 event_loop=get_event_loop(),
