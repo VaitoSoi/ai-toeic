@@ -767,7 +767,7 @@ async def p23_submit(
     async def _inner(session: AsyncSession):
         topic = await get_topic(topic_id, _session)
 
-        if topic.part not in [TopicPart.II, topic.part == TopicPart.III]:
+        if topic.part not in [TopicPart.II, TopicPart.III]:
             raise ValueError("wrong function")
 
         submission_id = uuid4().__str__()
