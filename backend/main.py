@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -8,9 +9,12 @@ from fastapi.staticfiles import StaticFiles
 
 from lib.ai import init as ai_init
 from lib.db import init as db_init
+from lib.env import ENV, LOGGING_LEVEL
 from lib.task import shutdown
 from route import review_route, statics_route, submission_route, topic_route
 
+logger = logging.getLogger("uvicorn")
+logger.setLevel(LOGGING_LEVEL)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +30,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 api_router = APIRouter()
 api_router.include_router(review_route)
 api_router.include_router(statics_route)
@@ -35,7 +40,6 @@ api_router.include_router(topic_route)
 if not os.path.exists("data/image"):
     os.mkdir("data/image")
 
-ENV = os.getenv("ENV", "DEV")
 if ENV == "PROD":
     app.include_router(api_router, prefix="/api")
     app.mount("/api/file", StaticFiles(directory="data/image"))
