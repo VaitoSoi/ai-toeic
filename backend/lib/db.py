@@ -261,7 +261,7 @@ class AnswerReview(SQLModel, table=True):
 
     overall_score: int
     feedback: str
-    detail_score: P1DetailScore = SQLField(sa_column=Column(JSON))
+    detail_score: P1DetailScore = SQLField(sa_type=PydanticJSON(P1DetailScore))
     annotations: list[Annotation] = SQLField(sa_type=PydanticListJSON(Annotation))
 
 
