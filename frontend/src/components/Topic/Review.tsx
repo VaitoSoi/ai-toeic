@@ -115,7 +115,7 @@ function Review({ submissionId }: { submissionId: string }) {
         interval.current = setInterval(() => void getReview(), 5000);
         return () => clearInterval(interval.current);
     }, [reviewId, getReview]);
-    
+
     useEffect(() => {
         if (status === 'done' && review && !topic) {
             getTopic();
@@ -158,13 +158,26 @@ function Review({ submissionId }: { submissionId: string }) {
         const annotations: Annotation[] = [];
         let lastIndex = 0;
         for (const annotation of reviewAnnotations) {
-            const uniqueSearchPhrase = `${annotation.context_before} ${annotation.target_text}`;
             // Find the index in the real string
-            const matchIndex = submission.indexOf(uniqueSearchPhrase);
-            if (matchIndex == -1) continue;
-            // The actual start index of the error is the match index + context length + 1 (for space)
-            const startIndex = matchIndex + annotation.context_before.length + 1;
-            const endIndex = startIndex + annotation.target_text.length;
+            let uniqueSearchPhrase = annotation.target_text;
+            let matchIndex = submission.indexOf(uniqueSearchPhrase, lastIndex);
+            let startIndex = 0, endIndex = 0;
+
+            if (matchIndex == -1) {
+                uniqueSearchPhrase = annotation.context_before + " " + uniqueSearchPhrase;
+
+                matchIndex = submission.indexOf(uniqueSearchPhrase, lastIndex);
+                if (matchIndex == -1) {
+                    console.log("can't find match of", annotation);
+                    continue;
+                } else {
+                    startIndex = matchIndex + annotation.context_before.length + 1;
+                    endIndex = startIndex + annotation.target_text.length;
+                }
+            } else {
+                startIndex = matchIndex;
+                endIndex = startIndex + annotation.target_text.length;
+            }
 
             if (lastIndex < startIndex)
                 annotations.push({
@@ -184,10 +197,10 @@ function Review({ submissionId }: { submissionId: string }) {
             });
             lastIndex = endIndex;
         }
-        if (lastIndex < submission.length - 1)
+        if (lastIndex < submission.length)
             annotations.push({
-                key: `${lastIndex}-${submission.length - 1}`,
-                text: submission.slice(lastIndex, submission.length - 1),
+                key: `${lastIndex}-${submission.length}`,
+                text: submission.slice(lastIndex),
                 isAnnotation: false
             });
         return annotations;
