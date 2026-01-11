@@ -11,15 +11,17 @@ This is the backend of TOEIC Writing Platform
 
 ## II. Enviroment Variables
 
-|Name                 |Default                           |Data type  |Note     |
-|---------------------|----------------------------------|-----------|---------|
-|DB_URL               |sqlite+aiosqlite:///data/db.sqlite|string     |The string has to be accepted by SQLAlchemy<br>The protocol (the string before `://`) has to include the async dialect (driver) of the DB (for example: `aiosqlite`, `asyncpg`)
-|OPENROUTER_URL       |https://ai.hackclub.com/proxy/v1/ |string     |Should be a OpenRouter-SDK-compatible service<br>The URL has to be compatible with `base_url` parameter of AIOHTTP ClientSession (see https://docs.aiohttp.org/en/stable/client_reference.html#aiohttp.ClientSession)|
-|OPENROUTER_API_KEY * |                                  |string     |         |
-|DEFAULT_MODEL        |google/gemini-3-flash-preview     |string     |         |
-|QUESTION_MODEL       |DEFAULT_MODEL                     |string     |         |
-|REVIEW_MODEL         |DEFAULT_MODEL                     |string     |         |
-|ARTIST_MODEL         |DEFAULT_MODEL                     |string     |The model has to be able to generate images|
+|Name                 |Default                           |Data type           |Note     |
+|---------------------|----------------------------------|--------------------|---------|
+|DB_URL               |sqlite+aiosqlite:///data/db.sqlite|string              |The string has to be accepted by SQLAlchemy<br>The protocol (the string before `://`) has to include the async dialect (driver) of the DB (for example: `aiosqlite` like `sqlite+aiosqlite://<db_url>`, `asyncpg` like `pg+asyncpg://<db_url>`)<br>Also remember to install the driver via `uv add <driver>`|
+|OPENROUTER_URL       |https://ai.hackclub.com/proxy/v1/ |string              |Should be a OpenRouter-SDK-compatible service<br>The URL has to be compatible with `base_url` parameter of AIOHTTP ClientSession (see https://docs.aiohttp.org/en/stable/client_reference.html#aiohttp.ClientSession)|
+|OPENROUTER_API_KEY * |                                  |string              |         |
+|DEFAULT_MODEL        |google/gemini-3-flash-preview     |string              |         |
+|QUESTION_MODEL       |DEFAULT_MODEL                     |string              |         |
+|REVIEW_MODEL         |DEFAULT_MODEL                     |string              |The model has to be able to see images (the input modilities including `images`)|
+|ARTIST_MODEL         |DEFAULT_MODEL                     |string              |The model has to be able to generate images (the output modilities including `images`)|
+|LOGGING_LEVEL        |INFO                              |Python logging lever|Not case-sensitive|
+|ENV                  |DEV                               |DEV/PROD            |         |
 
 <p>* <span style="color: red">Required</span></p>
 
