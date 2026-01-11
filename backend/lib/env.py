@@ -15,3 +15,6 @@ DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "google/gemini-3-flash-preview")
 QUESTION_MODEL = os.getenv("QUESTION_MODEL", DEFAULT_MODEL)
 REVIEW_MODEL = os.getenv("REVIEW_MODEL", DEFAULT_MODEL)
 ARTIST_MODEL = os.getenv("ARTIST_MODEL", DEFAULT_MODEL) # Part 1 Image generator
+
+LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "info").upper()
+ENV = os.getenv("ENV", "DEV")
