@@ -14,6 +14,7 @@ from .env import (
     QUESTION_MODEL,
     REVIEW_MODEL,
 )
+from .exception import ModelFailure
 
 client: ClientSession
 
@@ -265,6 +266,11 @@ async def generate_image(prompt: str):
             image_config=ImageConfig(aspect_ratio="5:4"),
         ).model_dump(),
     )
+
+    if response.status != 200:
+        print(json.dumps(await response.json(), indent=4))
+        raise ModelFailure(task="generate image", part="1")
+
     try:
         data = BaseReponse(**(await response.json()))
         return (
@@ -344,6 +350,8 @@ async def generate_topic(part: Literal["1", "2", "3"]):
             print(json.dumps(data, indent=4))
             print(error)
 
+    raise ModelFailure(task="generate topic", part=part)
+
 
 async def review_p1(
     file_path: str, artist_prompt: str, keywords: tuple[str, str], submission: str
@@ -396,7 +404,7 @@ async def review_p1(
             print(json.dumps(data, indent=4))
             print(error)
 
-    return None
+    raise ModelFailure(task="review", part="1")
 
 
 async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
@@ -435,7 +443,7 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
             print(json.dumps(data, indent=4))
             print(error)
 
-    return None
+    raise ModelFailure(task="review", part=part)
 
 
 async def summary_review_p1(reviews: list[P1ReviewResponse]):
@@ -474,7 +482,7 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
             print(json.dumps(data, indent=4))
             print(error)
 
-    return None
+    raise ModelFailure(task="summary review", part="1")
 
 
 def slice_md(text: str):
