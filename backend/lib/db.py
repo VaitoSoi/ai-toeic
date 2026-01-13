@@ -44,7 +44,13 @@ from .ai import (
     summary_review_p1,
 )
 from .env import DB_URL
-from .exception import QuestionNotFound, ReviewNotFound, SubmissionNotFound, TopicNotFound
+from .exception import (
+    ModelFailure,
+    QuestionNotFound,
+    ReviewNotFound,
+    SubmissionNotFound,
+    TopicNotFound,
+)
 from .task import add_task
 from .util import PydanticJSON, PydanticListJSON, colors
 
@@ -52,6 +58,7 @@ from .util import PydanticJSON, PydanticListJSON, colors
 class Status(PyEnum):
     pending = "pending"
     failed = "failed"
+    service_failed = "service_failed"
     done = "done"
 
 
@@ -511,7 +518,7 @@ async def _create_question_p1():
     return CombinedP1Response(
         keywords=prompt_response.keywords,
         image_url=image_url,
-        artist_prompt=prompt_response.artist_prompt
+        artist_prompt=prompt_response.artist_prompt,
     )
 
 
@@ -524,7 +531,7 @@ async def _create_topic_p1(count: int = 1):
 
 
 async def _update_topic_p1(
-    id: str, status: bool, responses: list[CombinedP1Response] | None
+    id: str, status: bool, responses: list[CombinedP1Response] | BaseException | None
 ):
     try:
         task, topic_id = id.split(":")
@@ -533,8 +540,11 @@ async def _update_topic_p1(
 
         async def _update_inner(update_session: AsyncSession):
             topic = await _get_topic(topic_id, update_session)
-            if not status or responses is None:
-                topic.status = Status.failed
+            if not status or responses is None or isinstance(responses, BaseException):
+                if isinstance(responses, ModelFailure):
+                    topic.status = Status.service_failed
+                else:
+                    topic.status = Status.failed
 
             else:
                 question_set: list[Question] = []
@@ -569,7 +579,7 @@ async def _update_topic_p1(
 
 
 async def _update_topic_p2_3(
-    id: str, status: bool, response: P2Response | P3Response | None
+    id: str, status: bool, response: P2Response | P3Response | BaseException | None
 ):
     try:
         task, topic_id = id.split(":")
@@ -580,8 +590,12 @@ async def _update_topic_p2_3(
             topic = await _get_topic(topic_id, update_session)
             question: Optional[Question] = None
 
-            if not status or response is None:
-                topic.status = Status.failed
+            if not status or response is None or isinstance(response, BaseException):
+                if isinstance(response, ModelFailure):
+                    topic.status = Status.service_failed
+                else:
+                    topic.status = Status.failed
+            
             else:
                 question_str: str
                 if isinstance(response, P2Response):
@@ -905,7 +919,7 @@ async def _review_p1(submission_id: str):
 async def _update_review_p1(
     id: str,
     status: bool,
-    response: tuple[list[tuple[str, P1ReviewResponse]], ReviewResponse] | None,
+    response: tuple[list[tuple[str, P1ReviewResponse]], ReviewResponse] | BaseException | None,
 ):
     try:
         task, review_id = id.split(":")
@@ -917,8 +931,12 @@ async def _update_review_p1(
             overall_review = None
             answer_reviews: list[AnswerReview] = []
 
-            if not status or response is None:
-                review.status = Status.failed
+            if not status or response is None or isinstance(response, BaseException):
+                if isinstance(response, ModelFailure):
+                    review.status = Status.service_failed
+                else:
+                    review.status = Status.failed
+
             else:
                 review.status = Status.done
 
@@ -957,7 +975,7 @@ async def _update_review_p1(
         print(format_exc())
 
 
-async def _update_review_p2_3(id: str, status: bool, response: ReviewResponse | None):
+async def _update_review_p2_3(id: str, status: bool, response: ReviewResponse | BaseException | None):
     try:
         task, review_id = id.split(":")
         if task != "review_p2_3":
@@ -967,8 +985,12 @@ async def _update_review_p2_3(id: str, status: bool, response: ReviewResponse | 
             review = await _get_review(review_id, update_session)
             overall_review = None
 
-            if not status or response is None:
-                review.status = Status.failed
+            if not status or response is None or isinstance(response, BaseException):
+                if isinstance(response, ModelFailure):
+                    review.status = Status.service_failed
+                else:
+                    review.status = Status.failed
+                    
             else:
                 review.status = Status.done
                 overall_review = OverallReview(
