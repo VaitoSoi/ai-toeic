@@ -12,8 +12,8 @@ route = APIRouter(
 
 
 @route.get("s", description="Get all topics", response_model=list[SlicedTopic])
-async def api_get_topics():
-    return await get_topics()
+async def api_get_topics(all: bool = False):
+    return await get_topics(all)
 
 
 @route.get("", description="Get a single topic", response_model=SlicedTopic)
