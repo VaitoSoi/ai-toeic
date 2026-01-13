@@ -30,7 +30,7 @@ async def api_get_review_of_submission(submission_id: str):
     return await get_review_of_submission(submission_id)
 
 
-@route.post("", description="Request a review, return review id")
+@route.post("", description="Request a review, return review id", response_model=str)
 @exception_handler
 async def api_review(submission_id: str):
     return (await review(submission_id))[1]
