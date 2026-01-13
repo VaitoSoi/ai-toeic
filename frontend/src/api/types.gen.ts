@@ -19,7 +19,7 @@ export type Annotation = {
     /**
      * Type
      */
-    type: 'grammar' | 'vocabulary' | 'coherence' | 'mechanics';
+    type: 'grammar' | 'vocabulary' | 'coherence' | 'mechanics' | 'suggestion';
     /**
      * Replacement
      */
@@ -71,7 +71,7 @@ export type P1DetailScore = {
      */
     grammar: number;
     /**
-     * Visual Relevance Score
+     * Visual Relevance
      */
     visual_relevance: number;
 };
@@ -457,14 +457,10 @@ export type ApiReviewReviewPostError = ApiReviewReviewPostErrors[keyof ApiReview
 
 export type ApiReviewReviewPostResponses = {
     /**
-     * Response Api Review Review Post
-     *
      * Successful Response
      */
     200: string;
 };
-
-export type ApiReviewReviewPostResponse = ApiReviewReviewPostResponses[keyof ApiReviewReviewPostResponses];
 
 export type ApiGetReviewOfSubmissionReviewOfGetData = {
     body?: never;
@@ -630,9 +626,23 @@ export type ApiSubmitSubmissionPostResponse = ApiSubmitSubmissionPostResponses[k
 export type ApiGetTopicsTopicsGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * All
+         */
+        all?: boolean;
+    };
     url: '/topics';
 };
+
+export type ApiGetTopicsTopicsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ApiGetTopicsTopicsGetError = ApiGetTopicsTopicsGetErrors[keyof ApiGetTopicsTopicsGetErrors];
 
 export type ApiGetTopicsTopicsGetResponses = {
     /**

@@ -3,14 +3,14 @@ import { Skeleton } from "../ui/skeleton";
 import ms from "ms";
 import { ChartNoAxesCombined, Clock, FileText, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiStatistic, type Statistics } from "@/api";
+import { apiGetStatistics, type Statistics } from "@/api";
 
 function Statics() {
     const [statistics, setStatistics] = useState<Statistics>();
 
     const getStatistics = useCallback(async () => {
         try {
-            const response = await apiStatistic();
+            const response = await apiGetStatistics();
             setStatistics(response.data);
         } catch (error) {
             console.error(error);

@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApiAverageScoreStatisticsGetData, ApiAverageScoreStatisticsGetResponses, ApiCreateTopicTopicPostData, ApiCreateTopicTopicPostErrors, ApiCreateTopicTopicPostResponses, ApiDeleteSubmissionSubmissionDeleteData, ApiDeleteSubmissionSubmissionDeleteErrors, ApiDeleteSubmissionSubmissionDeleteResponses, ApiDeleteTopicTopicDeleteData, ApiDeleteTopicTopicDeleteErrors, ApiDeleteTopicTopicDeleteResponses, ApiGetReviewOfSubmissionReviewOfGetData, ApiGetReviewOfSubmissionReviewOfGetErrors, ApiGetReviewOfSubmissionReviewOfGetResponses, ApiGetReviewReviewGetData, ApiGetReviewReviewGetErrors, ApiGetReviewReviewGetResponses, ApiGetReviewsReviewsGetData, ApiGetReviewsReviewsGetResponses, ApiGetSubmissionsSubmissionsGetData, ApiGetSubmissionsSubmissionsGetResponses, ApiGetSubmissionSubmissionGetData, ApiGetSubmissionSubmissionGetErrors, ApiGetSubmissionSubmissionGetResponses, ApiGetTopicsTopicsGetData, ApiGetTopicsTopicsGetResponses, ApiGetTopicTopicGetData, ApiGetTopicTopicGetErrors, ApiGetTopicTopicGetResponses, ApiReviewReviewPostData, ApiReviewReviewPostErrors, ApiReviewReviewPostResponses, ApiSubmitSubmissionPostData, ApiSubmitSubmissionPostErrors, ApiSubmitSubmissionPostResponses } from './types.gen';
+import type { ApiAverageScoreStatisticsGetData, ApiAverageScoreStatisticsGetResponses, ApiCreateTopicTopicPostData, ApiCreateTopicTopicPostErrors, ApiCreateTopicTopicPostResponses, ApiDeleteSubmissionSubmissionDeleteData, ApiDeleteSubmissionSubmissionDeleteErrors, ApiDeleteSubmissionSubmissionDeleteResponses, ApiDeleteTopicTopicDeleteData, ApiDeleteTopicTopicDeleteErrors, ApiDeleteTopicTopicDeleteResponses, ApiGetReviewOfSubmissionReviewOfGetData, ApiGetReviewOfSubmissionReviewOfGetErrors, ApiGetReviewOfSubmissionReviewOfGetResponses, ApiGetReviewReviewGetData, ApiGetReviewReviewGetErrors, ApiGetReviewReviewGetResponses, ApiGetReviewsReviewsGetData, ApiGetReviewsReviewsGetResponses, ApiGetSubmissionsSubmissionsGetData, ApiGetSubmissionsSubmissionsGetResponses, ApiGetSubmissionSubmissionGetData, ApiGetSubmissionSubmissionGetErrors, ApiGetSubmissionSubmissionGetResponses, ApiGetTopicsTopicsGetData, ApiGetTopicsTopicsGetErrors, ApiGetTopicsTopicsGetResponses, ApiGetTopicTopicGetData, ApiGetTopicTopicGetErrors, ApiGetTopicTopicGetResponses, ApiReviewReviewPostData, ApiReviewReviewPostErrors, ApiReviewReviewPostResponses, ApiSubmitSubmissionPostData, ApiSubmitSubmissionPostErrors, ApiSubmitSubmissionPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -65,7 +65,7 @@ export const apiGetReviewOf = <ThrowOnError extends boolean = false>(options: Op
 /**
  * Api Average Score
  */
-export const apiStatistic = <ThrowOnError extends boolean = false>(options?: Options<ApiAverageScoreStatisticsGetData, ThrowOnError>) => (options?.client ?? client).get<ApiAverageScoreStatisticsGetResponses, unknown, ThrowOnError>({
+export const apiGetStatistics = <ThrowOnError extends boolean = false>(options?: Options<ApiAverageScoreStatisticsGetData, ThrowOnError>) => (options?.client ?? client).get<ApiAverageScoreStatisticsGetResponses, unknown, ThrowOnError>({
     responseType: 'json',
     url: '/statistics/',
     ...options
@@ -124,7 +124,7 @@ export const apiSubmitSubmission = <ThrowOnError extends boolean = false>(option
  *
  * Get all topics
  */
-export const apiGetTopics = <ThrowOnError extends boolean = false>(options?: Options<ApiGetTopicsTopicsGetData, ThrowOnError>) => (options?.client ?? client).get<ApiGetTopicsTopicsGetResponses, unknown, ThrowOnError>({
+export const apiGetTopics = <ThrowOnError extends boolean = false>(options?: Options<ApiGetTopicsTopicsGetData, ThrowOnError>) => (options?.client ?? client).get<ApiGetTopicsTopicsGetResponses, ApiGetTopicsTopicsGetErrors, ThrowOnError>({
     responseType: 'json',
     url: '/topics',
     ...options
