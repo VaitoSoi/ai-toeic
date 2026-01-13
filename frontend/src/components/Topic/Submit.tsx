@@ -2,7 +2,7 @@ import axios from "axios";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { error } from "../Toast";
 import { useNavigate } from "react-router";
-import { Bug, Check, ChevronLeft, Clock, Sparkle } from "lucide-react";
+import { Bug, Check, ChevronLeft, ChevronsLeftRightEllipsis, Clock, Sparkle } from "lucide-react";
 import { BarLoader } from "react-spinners";
 import Markdown from "react-markdown";
 import { apiGetTopic, apiRequestReview, apiSubmitSubmission, type SlicedTopic } from "@/api";
@@ -65,16 +65,31 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         <BarLoader width={300} />
                     </div>
                 </div>
-                : <div className="m-auto flex flex-col items-center gap-5">
-                    <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
-                        <Bug className="w-10 h-10 text-red-500 animate-pulse" />
+                : topic.status == "service_failed"
+                    ? <div className="m-auto flex flex-col items-center gap-5">
+                        <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
+                            <ChevronsLeftRightEllipsis className="w-10 h-10 text-red-500 animate-pulse" />
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <h1 className="text-3xl font-bold">Service Failure</h1>
+                            <p className="text-xl text-center lg:p-0">
+                                The AI provider returns unexpected code (not 200 or not SUCCESS)<br />
+                                Please take a look at the server console and API console then try again later
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex flex-col items-center">
-                        <h1 className="text-3xl font-bold">Failed to generate topic</h1>
-                        <p className="text-xl px-10 text-center lg:p-0">There is an error occured while generating topic</p>
-                        <p className="text-xl text-center lg:p-0">Please look at the server console and try again</p>
+                    : <div className="m-auto flex flex-col items-center gap-5">
+                        <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
+                            <Bug className="w-10 h-10 text-red-500 animate-pulse" />
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <h1 className="text-3xl font-bold">Failed to Generate Topic</h1>
+                            <p className="text-xl text-center lg:p-0">
+                                There is an error occured while generating topic<br />
+                                Please look at the server console and try again
+                            </p>
+                        </div>
                     </div>
-                </div>
             : status != "writing"
                 ? status == "not_confirmed"
                     ? <div className="lg:w-2/3 flex flex-col text-lg my-auto mx-10 lg:m-auto p-5 border-2 rounded-md">

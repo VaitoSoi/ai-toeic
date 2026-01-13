@@ -332,7 +332,7 @@ export type Statistics = {
 /**
  * Status
  */
-export type Status = 'pending' | 'failed' | 'done';
+export type Status = 'pending' | 'failed' | 'service_failed' | 'done';
 
 /**
  * SubmitBody
