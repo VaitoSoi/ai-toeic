@@ -251,21 +251,22 @@ def format_message(messages: list[BaseUserMessage]):
 
 
 async def generate_image(prompt: str):
-    response = await client.post(
-        url="chat/completions",
-        json=BaseImageRequest(
-            model=ARTIST_MODEL,
-            messages=[
-                BaseUserMessage(role="system", content=system_prompt_for_image_p1),
-                BaseUserMessage(
-                    role="user",
-                    content=prompt,
-                ),
-            ],
-            modalities=["image"],
-            image_config=ImageConfig(aspect_ratio="5:4"),
-        ).model_dump(),
-    )
+    for _ in range(5):  # Retry 5 times if fail to parse the JSON
+        response = await client.post(
+            url="chat/completions",
+            json=BaseImageRequest(
+                model=ARTIST_MODEL,
+                messages=[
+                    BaseUserMessage(role="system", content=system_prompt_for_image_p1),
+                    BaseUserMessage(
+                        role="user",
+                        content=prompt,
+                    ),
+                ],
+                modalities=["image"],
+                image_config=ImageConfig(aspect_ratio="5:4"),
+            ).model_dump(),
+        )
 
     if response.status != 200:
         print(json.dumps(await response.json(), indent=4))
