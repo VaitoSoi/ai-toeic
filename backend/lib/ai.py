@@ -15,6 +15,7 @@ from .env import (
     REVIEW_MODEL,
 )
 from .exception import ModelFailure
+from .logger import logger
 
 client: ClientSession
 
@@ -268,19 +269,23 @@ async def generate_image(prompt: str):
             ).model_dump(),
         )
 
-    if response.status != 200:
-        print(json.dumps(await response.json(), indent=4))
-        raise ModelFailure(task="generate image", part="1")
+        if response.status != 200:
+            logger.error(f"generate image - model return code {response.status}")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            raise ModelFailure(task="generate image", part="1")
 
-    try:
-        data = BaseReponse(**(await response.json()))
-        return (
-            data.choices[0].message.images[0].image_url.url
-            if data.choices[0].message.images
-            else None
-        )
-    except ValidationError:
-        print(json.dumps(await response.json(), indent=4))
+        try:
+            data = BaseReponse(**(await response.json()))
+            return (
+                data.choices[0].message.images[0].image_url.url
+                if data.choices[0].message.images
+                else None
+            )
+        except ValidationError:
+            logger.error("generate image - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
+
+    raise ModelFailure(task="generate image", detail="reach max retry")
 
 
 async def generate_topic(part: Literal["1", "2", "3"]):
@@ -330,10 +335,16 @@ async def generate_topic(part: Literal["1", "2", "3"]):
             ).model_dump(),
         )
 
+        if response.status != 200:
+            logger.error(f"generate topic p{part} - model return code {response.status}")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            raise ModelFailure(task="generate topic", part=part)
+
         try:
             data = BaseReponse(**(await response.json()))
         except ValidationError:
-            print(json.dumps(await response.json(), indent=4))
+            logger.error(f"generate topic p{part} - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
             continue
 
         sliced = slice_md(data.choices[0].message.content)
@@ -348,10 +359,11 @@ async def generate_topic(part: Literal["1", "2", "3"]):
                 return P3Response.model_validate(parsed_topic)
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
-            print(json.dumps(data, indent=4))
-            print(error)
+            logger.error(f"generate topic p{part} - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            logger.exception(error)
 
-    raise ModelFailure(task="generate topic", part=part)
+    raise ModelFailure(task="generate topic", part=part, detail="reach max retry")
 
 
 async def review_p1(
@@ -389,10 +401,16 @@ async def review_p1(
             ).model_dump(),
         )
 
+        if response.status != 200:
+            logger.error(f"review p1 - model return code {response.status}")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            raise ModelFailure(task="review", part="1")
+
         try:
-            data = BaseReponse(**(await response.json()))    
+            data = BaseReponse(**(await response.json()))
         except ValidationError:
-            print(json.dumps(await response.json(), indent=4))
+            logger.error("review p1 - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
             continue
 
         sliced = slice_md(data.choices[0].message.content)
@@ -402,10 +420,11 @@ async def review_p1(
             return P1ReviewResponse(**parsed_review)
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
-            print(json.dumps(data, indent=4))
-            print(error)
+            logger.error("review p1 - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            logger.exception(error)
 
-    raise ModelFailure(task="review", part="1")
+    raise ModelFailure(task="review", part="1", detail="reach max retry")
 
 
 async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
@@ -428,10 +447,17 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
                 response_format=BaseRequestFormat(type="json_object"),
             ).model_dump(),
         )
+
+        if response.status != 200:
+            logger.error(f"review p{part} - model return code {response.status}")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            raise ModelFailure(task="review", part=part)
+
         try:
             data = BaseReponse(**(await response.json()))
         except ValidationError:
-            print(json.dumps(await response.json(), indent=4))
+            logger.error(f"review p{part} - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
             continue
 
         sliced = slice_md(data.choices[0].message.content)
@@ -441,10 +467,11 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
             return ReviewResponse(**parsed_review)
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
-            print(json.dumps(data, indent=4))
-            print(error)
+            logger.error(f"review p{part} - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            logger.exception(error)
 
-    raise ModelFailure(task="review", part=part)
+    raise ModelFailure(task="review", part=part, detail="reach max retry")
 
 
 async def summary_review_p1(reviews: list[P1ReviewResponse]):
@@ -467,12 +494,19 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
                 response_format=BaseRequestFormat(type="json_object"),
             ).model_dump(),
         )
+
+        if response.status != 200:
+            logger.error(f"summary review p1 - model return code {response.status}")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            raise ModelFailure(task="summary review", part="1")
+
         try:
-            data = BaseReponse(**(await response.json()))    
+            data = BaseReponse(**(await response.json()))
         except ValidationError:
-            print(json.dumps(await response.json(), indent=4))
+            logger.error("summary review p1 - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
             continue
-        
+
         sliced = slice_md(data.choices[0].message.content)
 
         try:
@@ -480,10 +514,11 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
             return ReviewResponse(**parsed_review, annotations=[])
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
-            print(json.dumps(data, indent=4))
-            print(error)
+            logger.error("summary review p1 - fail to validate response")
+            logger.debug(json.dumps(await response.json(), indent=4))
+            logger.exception(error)
 
-    raise ModelFailure(task="summary review", part="1")
+    raise ModelFailure(task="summary review", part="1", detail="reach max retry")
 
 
 def slice_md(text: str):
