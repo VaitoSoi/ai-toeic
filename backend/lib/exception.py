@@ -36,9 +36,11 @@ class ReviewNotFound(ValueError):
 class ModelFailure(Exception):
     task: Optional[str] = None
     part: Optional[str] = None
+    detail: Optional[str] = None
 
-    def __init__(self, task: Optional[str] = None, part: Optional[str] = None):
+    def __init__(self, task: Optional[str] = None, part: Optional[str] = None, detail: Optional[str] = None):
         super()
         self.message = "failed to generate"
         self.task = task
         self.part = part
+        self.detail = detail
