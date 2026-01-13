@@ -10,6 +10,8 @@ from asyncio import (
 from typing import Any, Callable, Coroutine, TypeVar
 from uuid import uuid4
 
+from .logger import logger
+
 tasks: dict[str, Task] = {}
 
 T = TypeVar("T")
@@ -18,7 +20,8 @@ T = TypeVar("T")
 def add_task(
     coro: Coroutine[Any, Any, T],
     id: str = uuid4().__str__(),
-    callback: Callable[[str, bool, T | None], Coroutine[Any, Any, Any]] | None = None,
+    callback: Callable[[str, bool, T | BaseException | None], Coroutine[Any, Any, Any]]
+    | None = None,
     event_loop: AbstractEventLoop | None = None,
 ):
     task = create_task(coro, name=id)
@@ -29,24 +32,26 @@ def add_task(
 
 def _done_callback(
     id: str,
-    callback: Callable[[str, bool, T | None], Coroutine[Any, Any, Any]] | None,
+    callback: Callable[[str, bool, T | BaseException | None], Coroutine[Any, Any, Any]]
+    | None,
     event_loop: AbstractEventLoop | None,
 ):
     def _inner(task: Task[T]):
-        if (task.exception()):
-            print("".join(traceback.format_exception(task.exception())))
+        if task.exception():
+            logger.error(f"task {id} failed")
+            logger.debug("".join(traceback.format_exception(task.exception())))
             if callback and event_loop:
-                run_coroutine_threadsafe(coro=callback(id, False, None), loop=event_loop)
+                run_coroutine_threadsafe(
+                    coro=callback(id, False, task.exception()), loop=event_loop
+                )
             return
         del tasks[id]
         if callback and event_loop:
             try:
                 result = task.result()
-                run_coroutine_threadsafe(
-                    coro=callback(id, True, result), loop=event_loop
-                )
-            except Exception:
-                run_coroutine_threadsafe(coro=callback(id, False, None), loop=event_loop)
+                run_coroutine_threadsafe(coro=callback(id, True, result), loop=event_loop)
+            except Exception as e:
+                run_coroutine_threadsafe(coro=callback(id, False, e), loop=event_loop)
 
     return _inner
 
