@@ -208,9 +208,9 @@ function UseP23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus:
                     <h1 className="text-2xl font-bold">{topic.summary?.summary}</h1>
                     <div className="text-xl whitespace-pre-wrap overflow-y-auto"><Markdown>{topic.questions![0].question}</Markdown></div>
                 </div>
-                <div className="lg:w-3/5 flex flex-col border-2 lg:rounded-md">
+        <div className="lg:flex-3 flex flex-col border-2 lg:rounded-md">
                     <textarea
-                        className="flex-1 w-full p-6 resize-none focus:outline-none text-slate-800 leading-relaxed overflow-scroll"
+                className="h-full w-full p-6 resize-none focus:outline-none text-slate-800 leading-relaxed overflow-scroll"
                         placeholder="Start writing your essay here..."
                         value={text}
                         onChange={(e) => setText(e.target.value)}
