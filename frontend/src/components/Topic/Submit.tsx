@@ -152,13 +152,13 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         <p className="text-lg">Cancel & Go back</p>
                     </div>
                     {topic.part == "1"
-                    ? <UseP1Submission topic={topic} setStatus={setStatus} />
+                        ? <UseP1Submission topic={topic} setStatus={setStatus} />
                         : <P23Submission topic={topic} setStatus={setStatus} />}
                 </div>
     }</div>;
 }
 
-function UseP23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (status: any) => void }) {
+function P23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (status: any) => void }) {
     const navigator = useNavigate();
     const [text, setText] = useState<string>("");
     const [timeLeft, setTimeLeft] = useState<number>(0);
@@ -195,39 +195,39 @@ function UseP23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus:
 
     return <div className="flex flex-col lg:flex-row lg:gap-2 h-full w-full min-h-0">
         <div className="lg:flex-2 flex flex-col p-5 border-2 lg:rounded-md gap-2 ">
-                    <div className="flex flex-row items-center gap-5 ">
-                        {topic.part == "2"
-                            ? <h1 className="w-fit p-2 bg-green-200 rounded-sm text-green-700 text-sm font-bold uppercase">Response to an email</h1>
-                            : <h1 className="w-fit p-2 bg-blue-200 rounded-sm text-blue-700 text-sm font-bold uppercase">Opinion essay</h1>
-                        }
-                        <div className="flex flex-row items-center gap-2 text-slate-600">
-                            <Clock className="size-7" />
-                            <p className="font-semibold text-xl">{Math.floor(timeLeft / 60)}:{timeLeft % 60 < 10 ? "0" : ""}{timeLeft % 60}</p>
-                        </div>
-                    </div>
-                    <h1 className="text-2xl font-bold">{topic.summary?.summary}</h1>
-                    <div className="text-xl whitespace-pre-wrap overflow-y-auto"><Markdown>{topic.questions![0].question}</Markdown></div>
+            <div className="flex flex-row items-center gap-5 ">
+                {topic.part == "2"
+                    ? <h1 className="w-fit p-2 bg-green-200 rounded-sm text-green-700 text-sm font-bold uppercase">Response to an email</h1>
+                    : <h1 className="w-fit p-2 bg-blue-200 rounded-sm text-blue-700 text-sm font-bold uppercase">Opinion essay</h1>
+                }
+                <div className="flex flex-row items-center gap-2 text-slate-600">
+                    <Clock className="size-7" />
+                    <p className="font-semibold text-xl">{Math.floor(timeLeft / 60)}:{timeLeft % 60 < 10 ? "0" : ""}{timeLeft % 60}</p>
                 </div>
+            </div>
+            <h1 className="text-2xl font-bold">{topic.summary?.summary}</h1>
+            <div className="text-xl whitespace-pre-wrap overflow-y-auto"><Markdown>{topic.questions![0].question}</Markdown></div>
+        </div>
         <div className="lg:flex-3 flex flex-col border-2 lg:rounded-md">
-                    <textarea
+            <textarea
                 className="h-full w-full p-6 resize-none focus:outline-none text-slate-800 leading-relaxed overflow-scroll"
-                        placeholder="Start writing your essay here..."
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        spellCheck="false"
-                        rows={10}
-                    />
-                    <div className="py-5 px-10 border-t-2 flex flex-row items-center">
-                        <p className="text-slate-500">{text.split(" ").filter(x => x.length).length} word(s)</p>
-                        <button
-                            className="ml-auto px-3 py-2 rounded-md text-white disabled:bg-blue-200 disabled:cursor-not-allowed enabled:bg-blue-600 enabled:cursor-pointer"
-                            // disabled={topic.part == "3" && text.split(" ").filter(x => x.length).length < 250}
-                            onClick={() => send(text)}
-                        >
-                            Submit for review
-                        </button>
-                    </div>
-                </div>
+                placeholder="Start writing your essay here..."
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                spellCheck="false"
+                rows={10}
+            />
+            <div className="py-5 px-10 border-t-2 flex flex-row items-center">
+                <p className="text-slate-500">{text.split(" ").filter(x => x.length).length} word(s)</p>
+                <button
+                    className="ml-auto px-3 py-2 rounded-md text-white disabled:bg-blue-200 disabled:cursor-not-allowed enabled:bg-blue-600 enabled:cursor-pointer"
+                    // disabled={topic.part == "3" && text.split(" ").filter(x => x.length).length < 250}
+                    onClick={() => send(text)}
+                >
+                    Submit for review
+                </button>
+            </div>
+        </div>
     </div>;
 }
 
@@ -272,34 +272,34 @@ function UseP1Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: 
 
 
     return <div className="lg:w-full flex flex-col p-5 border-2 lg:rounded-md gap-5 ">
-                <div className="flex flex-row items-center gap-5 ">
-                    <h1 className="w-fit p-2 bg-violet-200 rounded-sm text-violet-700 text-sm font-bold uppercase">Describe given images</h1>
-                    <div className="flex flex-row items-center gap-2 text-slate-600">
-                        <Clock className="size-7" />
-                        <p className="font-semibold text-xl">{Math.floor(timeLeft / 60)}:{timeLeft % 60 < 10 ? "0" : ""}{timeLeft % 60}</p>
-                    </div>
-                </div>
+        <div className="flex flex-row items-center gap-5 ">
+            <h1 className="w-fit p-2 bg-violet-200 rounded-sm text-violet-700 text-sm font-bold uppercase">Describe given images</h1>
+            <div className="flex flex-row items-center gap-2 text-slate-600">
+                <Clock className="size-7" />
+                <p className="font-semibold text-xl">{Math.floor(timeLeft / 60)}:{timeLeft % 60 < 10 ? "0" : ""}{timeLeft % 60}</p>
+            </div>
+        </div>
         <div className="flex flex-col lg:flex-row gap-10 overflow-x-auto">{topic.questions!.map(val =>
-                    <div className="w-100 p-4 rounded-md border-2 flex flex-col items-center gap-3">
-                        <img className="rounded-md" src={`${BACKEND_URL}/file/${val.file}`} />
-                        <p className="text-xl">{val.keywords!.join(" / ")}</p>
-                        <input
-                            className="border-2 rounded-md px-2 py-1"
-                            placeholder="Your sentence"
-                            value={texts[val.id]}
-                            onChange={(event) => setTexts((prev) => ({ ...prev, [val.file!]: event.target.value }))}
-                        />
-                    </div>
-                )}</div>
-                <div className="flex flex-row items-center">
-                    <button
-                        className="ml-auto px-3 py-2 rounded-md text-white disabled:bg-blue-200 disabled:cursor-not-allowed enabled:bg-blue-600 enabled:cursor-pointer"
-                        disabled={!!Object.values(texts).filter(val => val.length == 0).length}
-                        onClick={() => send()}
-                    >
-                        Submit for review
-                    </button>
-                </div>
+            <div className="w-100 p-4 rounded-md border-2 flex flex-col items-center gap-3">
+                <img className="rounded-md" src={`${BACKEND_URL}/file/${val.file}`} />
+                <p className="text-xl">{val.keywords!.join(" / ")}</p>
+                <input
+                    className="border-2 rounded-md px-2 py-1"
+                    placeholder="Your sentence"
+                    value={texts[val.id]}
+                    onChange={(event) => setTexts((prev) => ({ ...prev, [val.file!]: event.target.value }))}
+                />
+            </div>
+        )}</div>
+        <div className="flex flex-row items-center">
+            <button
+                className="ml-auto px-3 py-2 rounded-md text-white disabled:bg-blue-200 disabled:cursor-not-allowed enabled:bg-blue-600 enabled:cursor-pointer"
+                disabled={!!Object.values(texts).filter(val => val.length == 0).length}
+                onClick={() => send()}
+            >
+                Submit for review
+            </button>
+        </div>
     </div>;
 }
 
