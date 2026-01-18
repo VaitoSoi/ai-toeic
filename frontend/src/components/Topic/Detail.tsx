@@ -100,7 +100,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                                         className="rounded-md"
                                         src={`${BACKEND_URL}/file/${val.file}`}
                                     />
-                                    <p className="text-lg">{val.keywords!.join(" / ")}</p>
+                                    <p className="text-2xl xl:text-lg">{val.keywords!.join(" / ")}</p>
                                 </div>)}
                             </div>
                             : <div className="w-full text-lg whitespace-pre-wrap">
