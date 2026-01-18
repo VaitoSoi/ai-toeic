@@ -94,7 +94,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                             </div>
                         </div>
                         {topic.part == "1"
-                            ? <div className="overflow-y-hidden overflow-x-auto flex flex-row gap-5">
+                            ? <div className="overflow-y-auto lg:overflow-y-hidden lg:overflow-x-auto flex flex-col lg:flex-row gap-5">
                                 {topic.questions?.map(val => <div className="flex flex-col items-center py-1">
                                     <img
                                         className="rounded-md"
