@@ -41,7 +41,7 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
         return () => clearTimeout(topicReloadTimer.current);
     }, [preloadedData, topic, getTopic]);
 
-    return <div className="flex flex-col items-center w-full flex-1 min-h-0">{!topic
+    return <div className="flex flex-col items-center h-full w-full min-h-0">{!topic
         ? <div className="m-auto">
             <div className="flex flex-col items-center gap-5">
                 <h1 className="text-3xl font-bold">Loading topic</h1>
