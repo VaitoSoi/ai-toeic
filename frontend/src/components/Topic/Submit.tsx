@@ -143,11 +143,19 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                                     </div>
                                 </div>
                     }</div>
-                : topic.part == "1"
+                : <div className="lg:w-9/10 h-full flex flex-col gap-5 py-5 lg:py-10">
+                    <div
+                        className="w-fit flex px-4 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
+                        onClick={() => navigator(`/topic/${topic.id}`, { viewTransition: true })}
+                    >
+                        <ChevronLeft className="size-7" />
+                        <p className="text-lg">Cancel & Go back</p>
+                    </div>
+                    {topic.part == "1"
                     ? <UseP1Submission topic={topic} setStatus={setStatus} />
-                    : <UseP23Submission topic={topic} setStatus={setStatus} />
-    }
-    </div>;
+                        : <P23Submission topic={topic} setStatus={setStatus} />}
+                </div>
+    }</div>;
 }
 
 function UseP23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (status: any) => void }) {
@@ -185,17 +193,8 @@ function UseP23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus:
 
 
 
-    return <div className="flex flex-col items-center w-full flex-1 min-h-0">{
-        <div className="lg:w-9/10 h-full lg:overflow-hidden flex-1 flex flex-col gap-5 py-5 lg:py-10">
-            <div
-                className="w-fit flex flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
-                onClick={() => navigator(`/topic/${topic.id}`, { viewTransition: true })}
-            >
-                <ChevronLeft className="size-7" />
-                <p className="text-lg">Cancel & Go back</p>
-            </div>
-            <div className="flex flex-col lg:flex-row lg:gap-2 flex-1 min-h-0">
-                <div className="lg:w-2/5 flex flex-col p-5 border-2 lg:rounded-md gap-2 ">
+    return <div className="flex flex-col lg:flex-row lg:gap-2 h-full w-full min-h-0">
+        <div className="lg:flex-2 flex flex-col p-5 border-2 lg:rounded-md gap-2 ">
                     <div className="flex flex-row items-center gap-5 ">
                         {topic.part == "2"
                             ? <h1 className="w-fit p-2 bg-green-200 rounded-sm text-green-700 text-sm font-bold uppercase">Response to an email</h1>
@@ -229,9 +228,7 @@ function UseP23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus:
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
-    }</div>;
+    </div>;
 }
 
 function UseP1Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (status: any) => void }) {
@@ -274,16 +271,7 @@ function UseP1Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: 
 
 
 
-    return <div className="flex flex-col items-center w-full flex-1 min-h-0">{
-        <div className="lg:w-9/10 h-full lg:overflow-hidden flex-1 flex flex-col gap-5 py-5 lg:py-10">
-            <div
-                className="w-fit flex flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
-                onClick={() => navigator(`/topic/${topic.id}`, { viewTransition: true })}
-            >
-                <ChevronLeft className="size-7" />
-                <p className="text-lg">Cancel & Go back</p>
-            </div>
-            <div className="lg:w-full flex flex-col p-5 border-2 lg:rounded-md gap-5 ">
+    return <div className="lg:w-full flex flex-col p-5 border-2 lg:rounded-md gap-5 ">
                 <div className="flex flex-row items-center gap-5 ">
                     <h1 className="w-fit p-2 bg-violet-200 rounded-sm text-violet-700 text-sm font-bold uppercase">Describe given images</h1>
                     <div className="flex flex-row items-center gap-2 text-slate-600">
@@ -312,9 +300,7 @@ function UseP1Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: 
                         Submit for review
                     </button>
                 </div>
-            </div>
-        </div>
-    }</div>;
+    </div>;
 }
 
 export default Submit;
