@@ -20,7 +20,7 @@ This is the backend of TOEIC Writing Platform
 |QUESTION_MODEL       |DEFAULT_MODEL                     |string              |         |
 |REVIEW_MODEL         |DEFAULT_MODEL                     |string              |The model has to be able to see images (the input modilities including `images`)|
 |ARTIST_MODEL         |DEFAULT_MODEL                     |string              |The model has to be able to generate images (the output modilities including `images`)|
-|LOGGING_LEVEL        |INFO                              |Python logging lever|Not case-sensitive|
+|LOGGING_LEVEL        |INFO                              |Python logging level|Not case-sensitive|
 |ENV                  |DEV                               |DEV/PROD            |         |
 
 <p>* <span style="color: red">Required</span></p>
