@@ -279,7 +279,7 @@ function UseP1Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: 
                         <p className="font-semibold text-xl">{Math.floor(timeLeft / 60)}:{timeLeft % 60 < 10 ? "0" : ""}{timeLeft % 60}</p>
                     </div>
                 </div>
-                <div className="flex flex-row gap-10">{topic.questions!.map(val =>
+        <div className="flex flex-col lg:flex-row gap-10 overflow-x-auto">{topic.questions!.map(val =>
                     <div className="w-100 p-4 rounded-md border-2 flex flex-col items-center gap-3">
                         <img className="rounded-md" src={`${BACKEND_URL}/file/${val.file}`} />
                         <p className="text-xl">{val.keywords!.join(" / ")}</p>
