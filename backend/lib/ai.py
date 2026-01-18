@@ -276,11 +276,11 @@ async def generate_image(prompt: str):
 
         try:
             data = BaseReponse(**(await response.json()))
-            return (
-                data.choices[0].message.images[0].image_url.url
-                if data.choices[0].message.images
-                else None
-            )
+            if data.choices[0].message.images:
+                return data.choices[0].message.images[0].image_url.url
+            else:
+                raise ModelFailure(task="generate image", part="1")
+            
         except ValidationError:
             logger.error("generate image - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
