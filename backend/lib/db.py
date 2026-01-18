@@ -568,9 +568,10 @@ async def _update_topic_p1(
                     question_set.append(question)
 
                 topic.status = Status.done
+                update_session.add_all(question_set)
 
-                update_session.add_all([topic, *question_set])
-                await update_session.commit()
+            update_session.add(topic)
+            await update_session.commit()
 
         await create_session_and_run(_update_inner)
 
