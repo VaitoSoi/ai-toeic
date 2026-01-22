@@ -4,7 +4,7 @@ import { error } from "../Toast";
 import { useNavigate } from "react-router";
 import { Bug, Check, ChevronLeft, ChevronsLeftRightEllipsis, Clock, Sparkle } from "lucide-react";
 import { BarLoader } from "react-spinners";
-import Markdown from "react-markdown";
+import { Markdown } from "../ui/markdown";
 import { apiGetTopic, apiRequestReview, apiSubmitSubmission, type SlicedTopic } from "@/api";
 import { BACKEND_URL } from "@/api/client.gen";
 
@@ -206,7 +206,10 @@ function P23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (s
                 </div>
             </div>
             <h1 className="text-2xl font-bold">{topic.summary?.summary}</h1>
-            <div className="text-xl whitespace-pre-wrap overflow-y-auto"><Markdown>{topic.questions![0].question}</Markdown></div>
+            <div className="border-2 rounded-2xl" />
+            <div className="flex flex-col gap-2 text-xl whitespace-pre-wrap overflow-y-auto">
+                <Markdown>{topic.questions![0].question}</Markdown>
+            </div>
         </div>
         <div className="lg:flex-3 flex flex-col border-2 lg:rounded-md">
             <textarea

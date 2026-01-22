@@ -4,7 +4,7 @@ import { error, success } from "../Toast";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Mail, NotebookText, Plus, Trash, History, Calendar, ChevronRight, Image } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
-import Markdown from "react-markdown";
+import { Markdown } from "../ui/markdown";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { apiDeleteTopic, apiGetTopic, type SlicedTopic } from "@/api";
 import { BACKEND_URL } from "@/api/client.gen";
