@@ -596,18 +596,23 @@ async def _update_topic_p2_3(
                     topic.status = Status.service_failed
                 else:
                     topic.status = Status.failed
-            
+
             else:
                 question_str: str
                 if isinstance(response, P2Response):
                     content = response.test_content
+                    question_str = ""
+                    if content.header:
+                        question_str = (
+                            f"**From:** {content.header.from_}\n"
+                            + f"**To:** {content.header.to}\n"
+                            + f"**Subject:** {content.header.subject}\n"
+                            + f"**Sent:** {content.header.sent}\n"
+                            + "\n"
+                        )
                     question_str = (
-                        f"**From:** {content.email_header.from_}\n"
-                        + f"**To:** {content.email_header.to}\n"
-                        + f"**Subject:** {content.email_header.subject}\n"
-                        + f"**Sent:** {content.email_header.sent}\n"
-                        + "\n"
-                        + f"{content.email_body}\n"
+                        question_str
+                        + f"{content.body}\n"
                         + "\n"
                         + f"**Direction:** {content.direction}"
                     )
@@ -920,7 +925,9 @@ async def _review_p1(submission_id: str):
 async def _update_review_p1(
     id: str,
     status: bool,
-    response: tuple[list[tuple[str, P1ReviewResponse]], ReviewResponse] | BaseException | None,
+    response: tuple[list[tuple[str, P1ReviewResponse]], ReviewResponse]
+    | BaseException
+    | None,
 ):
     try:
         task, review_id = id.split(":")
@@ -976,7 +983,9 @@ async def _update_review_p1(
         print(format_exc())
 
 
-async def _update_review_p2_3(id: str, status: bool, response: ReviewResponse | BaseException | None):
+async def _update_review_p2_3(
+    id: str, status: bool, response: ReviewResponse | BaseException | None
+):
     try:
         task, review_id = id.split(":")
         if task != "review_p2_3":
@@ -991,7 +1000,7 @@ async def _update_review_p2_3(id: str, status: bool, response: ReviewResponse | 
                     review.status = Status.service_failed
                 else:
                     review.status = Status.failed
-                    
+
             else:
                 review.status = Status.done
                 overall_review = OverallReview(

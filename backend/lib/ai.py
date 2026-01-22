@@ -70,8 +70,8 @@ class P2ContentHeader(BaseModel):
 
 
 class P2Content(BaseModel):
-    email_header: P2ContentHeader
-    email_body: str
+    header: Optional[P2ContentHeader] = Field(default=None)
+    body: str
     direction: str
 
 
@@ -280,7 +280,7 @@ async def generate_image(prompt: str):
                 return data.choices[0].message.images[0].image_url.url
             else:
                 raise ModelFailure(task="generate image", part="1")
-            
+
         except ValidationError:
             logger.error("generate image - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
@@ -296,23 +296,37 @@ async def generate_topic(part: Literal["1", "2", "3"]):
         action = choice(theme.actions)
         object = choice(theme.objects)
         topic_theme = (
-            f"**Subject:** {subject}\n**Action:** {action}\n**Object:** {object}"
+            f"**Subject:** {subject}\n"
+            + f"**Action:** {action}\n"
+            + f"**Object:** {object}"
         )
     elif part == "2":
         system_prompt = system_prompt_for_topic_p2
         theme = choice(themes_for_p2)
-        sender = choice(theme.senders)
-        recipient = choice(theme.recipients)
-        problem = choice(theme.problems)
-        topic_theme = (
-            f"**Sender:** {sender}\n**Recipient:** {recipient}\n**Problem:** {problem}"
-        )
+        if not theme.senders and not theme.recipients:
+            scenario = choice(theme.problems)
+            topic_theme = (
+                f"**Theme:** {theme.theme}\n"
+                + "**Format:** flyer"
+                + f"**Scenario:** {scenario}"
+            )
+        else:
+            sender = choice(theme.senders)
+            recipient = choice(theme.recipients)
+            problem = choice(theme.problems)
+            topic_theme = (
+                f"**Theme:** {theme.theme}\n"
+                + "**Format:** email\n"
+                + f"**Sender:** {sender}\n"
+                + f"**Recipient:** {recipient}\n"
+                + f"**Problem/Scenario:** {problem}"
+            )
     elif part == "3":
         system_prompt = system_prompt_for_topic_p3
         theme = choice(themes_for_p3)
         opinion = choice(theme.opinions)
         keywords = choices(theme.keywords, k=2)
-        topic_theme = f"**Opinion:** {opinion}\n**Keywords:** {', '.join(keywords)}"
+        topic_theme = f"**Opinion:** {opinion}\n" + f"**Keywords:** {', '.join(keywords)}"
 
     for _ in range(5):  # Retry 5 times if fail to parse the JSON
         response = await client.post(
