@@ -81,9 +81,8 @@ class P2Response(BaseModel):
 
 
 class P3Content(BaseModel):
-    context_statement: str
-    question_prompt: Optional[str] = Field(default=None)
-    task_requirement: str
+    context_statement: Optional[str] = Field(default=None)
+    question_prompt: str
 
 
 class P3Response(BaseModel):
