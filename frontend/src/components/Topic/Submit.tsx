@@ -37,7 +37,7 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
             return;
         if (topic && topic.status != "pending")
             return;
-        topicReloadTimer.current = setTimeout(() => void getTopic(), 1000);
+        topicReloadTimer.current = setTimeout(() => void getTopic(), 5000);
         return () => clearTimeout(topicReloadTimer.current);
     }, [preloadedData, topic, getTopic]);
 
