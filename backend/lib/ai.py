@@ -210,6 +210,7 @@ class BaseUserMessage(BaseModel):
 
 class BaseRequestFormat(BaseModel):
     type: Literal["json_object"]
+    json_schema: dict[str, Any]
 
 
 class BaseRequest(BaseModel):
@@ -345,7 +346,16 @@ async def generate_topic(part: Literal["1", "2", "3"]):
                         ),
                     ),
                 ],
-                response_format=BaseRequestFormat(type="json_object"),
+                response_format=BaseRequestFormat(
+                    type="json_object",
+                    json_schema=(
+                        P1Response
+                        if part == "1"
+                        else P2Response
+                        if part == "2"
+                        else P3Response
+                    ).model_json_schema(),
+                ),
             ).model_dump(),
         )
 
@@ -411,7 +421,9 @@ async def review_p1(
                         ],
                     ),
                 ],
-                response_format=BaseRequestFormat(type="json_object"),
+                response_format=BaseRequestFormat(
+                    type="json_object", json_schema=P1ReviewResponse.model_json_schema()
+                ),
             ).model_dump(),
         )
 
@@ -458,7 +470,9 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
                         ),
                     ),
                 ],
-                response_format=BaseRequestFormat(type="json_object"),
+                response_format=BaseRequestFormat(
+                    type="json_object", json_schema=ReviewResponse.model_json_schema()
+                ),
             ).model_dump(),
         )
 
@@ -505,7 +519,9 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
                         ),
                     ),
                 ],
-                response_format=BaseRequestFormat(type="json_object"),
+                response_format=BaseRequestFormat(
+                    type="json_object", json_schema=ReviewResponse.model_json_schema()
+                ),
             ).model_dump(),
         )
 
