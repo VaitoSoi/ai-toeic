@@ -316,13 +316,13 @@ export type Statistics = {
      */
     total_submission: number;
     /**
+     * Total topic
+     */
+    total_topic: number;
+    /**
      * Average Score
      */
     average_score: number;
-    /**
-     * Improvement Rate
-     */
-    improvement_rate: number;
     /**
      * Total Time
      */

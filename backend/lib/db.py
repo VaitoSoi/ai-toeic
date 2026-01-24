@@ -318,8 +318,8 @@ class Session(SQLModel, table=True):
 
 class Statistics(BaseModel):
     total_submission: int
+    total_topic: int
     average_score: float
-    improvement_rate: float
     total_time: int
 
 
@@ -1094,6 +1094,7 @@ async def add_session(
 
 async def statistics():
     async def _inner(session: AsyncSession):
+        topics = await get_topics()
         reviews = filter(lambda x: x.overall is not None, await get_reviews(session))
 
         mid_points: list[float] = []
@@ -1102,11 +1103,6 @@ async def statistics():
             mid_points.append((score_range[0] + score_range[1]) / 2)
 
         average_score = sum(mid_points) / len(mid_points) if len(mid_points) else 0
-        improvement_rate = (
-            (mid_points[0] + mid_points[-1]) / mid_points[0]
-            if len(mid_points) and mid_points[0]
-            else 0
-        )
 
         sessions = await get_sessions(session)
         total_time = sum(
@@ -1117,8 +1113,8 @@ async def statistics():
 
         return Statistics(
             total_submission=submissions.__len__(),
+            total_topic=topics.__len__(),
             average_score=average_score,
-            improvement_rate=improvement_rate,
             total_time=total_time,
         )
 
