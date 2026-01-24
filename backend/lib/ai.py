@@ -1,6 +1,6 @@
 import base64
 import json
-from random import choice, choices
+from random import choice, choices, randint
 from typing import Any, Literal, Optional, Union
 
 from aiohttp import ClientSession
@@ -325,7 +325,7 @@ async def generate_topic(part: Literal["1", "2", "3"]):
         system_prompt = system_prompt_for_topic_p3
         theme = choice(themes_for_p3)
         opinion = choice(theme.opinions)
-        keywords = choices(theme.keywords, k=2)
+        keywords = choices(theme.keywords, k=randint(2, 3))
         topic_theme = f"**Opinion:** {opinion}\n" + f"**Keywords:** {', '.join(keywords)}"
 
     for _ in range(5):  # Retry 5 times if fail to parse the JSON
