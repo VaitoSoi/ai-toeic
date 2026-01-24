@@ -118,7 +118,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         topic.submissions?.length
                             ? topic.submissions.map((submission) =>
                                 <div
-                                    className="w-fit lg:w-full lg:m-0 h-fit p-5 flex flex-row items-center gap-5 lg:border-2 hover:border-blue-300 transition-all duration-200 lg:rounded-md group cursor-pointer"
+                                    className="w-full lg:m-0 h-fit p-5 flex flex-row items-center gap-5 lg:border-2 hover:border-blue-300 transition-all duration-200 lg:rounded-md group cursor-pointer"
                                     onClick={() => navigator(`/topic/${topic.id}/submission/${submission.id}`, { viewTransition: true })}
                                 >
                                     <div className="flex flex-row items-center gap-2 text-slate-500">
@@ -126,9 +126,11 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                                         <p>{new Date(submission.created_at).toDateString()}</p>
                                     </div>
                                     {submission.review?.overall ? <>
-                                        <h1 className="text-xl font-medium group-hover:text-blue-600 transition-all duration-200">{submission.review.overall.summary_feedback}</h1>
+                                        <h1 className="text-lg xl:text-xl font-medium group-hover:text-blue-600 transition-all duration-200">
+                                            {submission.review.overall.summary_feedback}
+                                        </h1>
                                         <div className="ml-auto flex flex-col items-center w-40">
-                                            <p className="text-xl font-bold">{
+                                            <p className="text-lg xl:text-xl font-bold">{
                                                 submission.review.overall.score_range
                                                     ? `${submission.review.overall.score_range[0]} - ${submission.review.overall.score_range[1]}`
                                                     : "Evaluating"

@@ -363,12 +363,12 @@ function Review({ submissionId }: { submissionId: string }) {
                                 const question = topic.questions!.find(quesionVal => quesionVal.id == val.question_id);
                                 const answerReview = review.answers!.find(answerVal => answerVal.answer_id == val.id);
                                 if (!question || !answerReview) return;
-                                return <div className="flex flex-row gap-10 items-center p-5 rounded-md border-2">
+                                return <div className="flex flex-col xl:flex-row gap-10 items-center p-5 rounded-md border-2">
                                     <img
-                                        className="w-1/5 rounded-md"
+                                        className="h-1/5 xl:w-1/5 rounded-md"
                                         src={`${BACKEND_URL}/file/${question.file}`}
                                     />
-                                    <div className="w-2/5">
+                                    <div className="h-2/5 xl:w-2/5">
                                         <h2 className="font-bold text-xl text-slate-700 uppercase">Feedback</h2>
                                         <p>{answerReview.feedback}</p>
                                         <h2 className="font-bold text-xl text-slate-700 uppercase">Correction</h2>
@@ -379,7 +379,7 @@ function Review({ submissionId }: { submissionId: string }) {
                                             setCurrentAnnotation={setCurrentAnnotation}
                                         />
                                     </div>
-                                    <div className="w-2/5 flex flex-2 gap-3 flex-col">
+                                    <div className="h-2/5 w-full xl:w-2/5 flex flex-2 gap-3 flex-col">
                                         <h1 className="font-bold text-2xl text-slate-700 uppercase">Details</h1>
                                         <div className="w-full flex flex-col gap-5">{
                                             [
