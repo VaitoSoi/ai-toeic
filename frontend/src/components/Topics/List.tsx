@@ -28,7 +28,7 @@ function List() {
         <h1 className="text-3xl font-semibold">🖊️ Essays</h1>
         <h2 className="text-xl font-normal ml-12">Select a writing section to begin your training session</h2>
         <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 py-5 gap-5">
-            <div className="min-h-65 flex">
+            <div className="min-h-65 flex flex-col xl:flex-row">
                 <NewItemCard
                     className="flex-1 rounded-tl-md rounded-bl-md"
                     onClick={() => navigator("/topic/new", { viewTransition: true })}
