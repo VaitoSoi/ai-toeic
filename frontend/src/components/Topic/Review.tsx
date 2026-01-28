@@ -2,7 +2,7 @@ import { BookOpen, Bug, ChevronLeft, CircleQuestionMark, MessageSquare, PenTool,
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BarLoader } from "react-spinners";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
-import { apiGetReview, apiGetReviewOf, apiGetSubmission, apiGetTopic, apiRequestReview, type SlicedSubmission, type Annotation as ReviewAnnotation, type SlicedReview, type SlicedTopic } from "@/api";
+import { apiGetReview, apiGetReviewOfSubmission, apiGetSubmission, apiGetTopic, apiRequestReview, type SlicedSubmission, type Annotation as ReviewAnnotation, type SlicedReview, type SlicedTopic } from "@/api";
 import axios from "axios";
 import { error } from "../Toast";
 import { useNavigate } from "react-router";
@@ -40,7 +40,7 @@ function Review({ submissionId }: { submissionId: string }) {
 
     const getReviewId = useCallback(async () => {
         try {
-            const response = await apiGetReviewOf({ query: { submission_id: submissionId } });
+            const response = await apiGetReviewOfSubmission({ query: { submission_id: submissionId } });
             if (!response.data || !response.data!.id)
                 return setStatus("no_review");
             setReviewId(response.data.id);

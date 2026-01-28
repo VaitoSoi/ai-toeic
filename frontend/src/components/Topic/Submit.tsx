@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { Bug, Check, ChevronLeft, ChevronsLeftRightEllipsis, Clock, Sparkle } from "lucide-react";
 import { BarLoader } from "react-spinners";
 import { Markdown } from "../ui/markdown";
-import { apiGetTopic, apiRequestReview, apiSubmitSubmission, type SlicedTopic } from "@/api";
+import { apiGetTopic, apiRequestReview, apiSubmit, type SlicedTopic } from "@/api";
 import { BACKEND_URL } from "@/api/client.gen";
 
 function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData?: SlicedTopic }) {
@@ -180,7 +180,7 @@ function P23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (s
         if (!topic) return;
         setStatus("sending");
         try {
-            const response = await apiSubmitSubmission({ query: { part: topic.part, topic_id: topic.id }, body: { submission: text } });
+            const response = await apiSubmit({ query: { part: topic.part, topic_id: topic.id }, body: { submission: text } });
             if (!response.data)
                 return setStatus("error");
             await apiRequestReview({ query: { submission_id: response.data.id } });
@@ -258,7 +258,7 @@ function UseP1Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: 
         if (!topic) return;
         setStatus("sending");
         try {
-            const response = await apiSubmitSubmission({
+            const response = await apiSubmit({
                 query: { part: topic.part, topic_id: topic.id },
                 body: Object.entries(texts).map(val => ({ file: val[0], submission: val[1] }))
             });
