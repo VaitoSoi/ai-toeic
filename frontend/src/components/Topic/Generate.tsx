@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Image, Mail, NotebookText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Image, Mail, NotebookText, Sparkle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { error } from "../Toast";
@@ -36,7 +36,7 @@ function Generate() {
                 <p className="text-lg">Go back to dashboard</p>
             </div>
             <div className="lg:border-2 lg:rounded-md p-5">
-                <h1 className="text-2xl font-bold">Pick a part</h1>
+                <h1 className="text-2xl font-bold flex flex-row items-center gap-2"><Sparkle strokeWidth={2}/> Generate a Topic</h1>
                 <h2 className="text-xl font-normal text-slate-400">Select the TOEIC writing part you want to practice:</h2>
                 <div className="w-full mt-4 flex flex-col gap-2">
                     <div
