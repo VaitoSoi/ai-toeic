@@ -692,6 +692,30 @@ async def create_topic(
     return await create_session_and_run(_inner, _session)
 
 
+async def _insert_topic(
+    part: Literal["2", "3"], question_str: str, _session: Optional[AsyncSession] = None
+):
+    async def _inner(session: AsyncSession):
+        topic_id = uuid4().__str__()
+        topic = Topic(
+            id=topic_id,
+            part=TopicPart.II if part == "2" else TopicPart.III,
+            status=Status.done,
+        )
+        question = Question(topic_id=topic_id, question=question_str)
+        session.add_all([topic, question])
+        await session.commit()
+        return await _get_topic(topic_id, session)
+
+    return await create_session_and_run(_inner, _session)
+
+
+async def insert_topic(
+    part: Literal["2", "3"], question_str: str, _session: Optional[AsyncSession] = None
+):
+    return format_topic(await _insert_topic(part, question_str, _session))
+
+
 async def delete_topic(id: str, _session: AsyncSession | None = None):
     async def _inner(session: AsyncSession):
         topic = await _get_topic(id)
@@ -747,7 +771,7 @@ class P1SubmitBody(BaseModel):
 
 async def p1_submit(
     topic_id: str,
-    submissions: list[P1SubmitBody],  # file, submission
+    submissions: list[P1SubmitBody],
     _session: AsyncSession | None = None,
 ):
     async def _inner(session: AsyncSession):

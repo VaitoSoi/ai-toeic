@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApiAverageScoreStatisticsGetData, ApiAverageScoreStatisticsGetResponses, ApiCreateTopicTopicPostData, ApiCreateTopicTopicPostErrors, ApiCreateTopicTopicPostResponses, ApiDeleteSubmissionSubmissionDeleteData, ApiDeleteSubmissionSubmissionDeleteErrors, ApiDeleteSubmissionSubmissionDeleteResponses, ApiDeleteTopicTopicDeleteData, ApiDeleteTopicTopicDeleteErrors, ApiDeleteTopicTopicDeleteResponses, ApiGetReviewOfSubmissionReviewOfGetData, ApiGetReviewOfSubmissionReviewOfGetErrors, ApiGetReviewOfSubmissionReviewOfGetResponses, ApiGetReviewReviewGetData, ApiGetReviewReviewGetErrors, ApiGetReviewReviewGetResponses, ApiGetReviewsReviewsGetData, ApiGetReviewsReviewsGetResponses, ApiGetSubmissionsSubmissionsGetData, ApiGetSubmissionsSubmissionsGetResponses, ApiGetSubmissionSubmissionGetData, ApiGetSubmissionSubmissionGetErrors, ApiGetSubmissionSubmissionGetResponses, ApiGetTopicsTopicsGetData, ApiGetTopicsTopicsGetErrors, ApiGetTopicsTopicsGetResponses, ApiGetTopicTopicGetData, ApiGetTopicTopicGetErrors, ApiGetTopicTopicGetResponses, ApiReviewReviewPostData, ApiReviewReviewPostErrors, ApiReviewReviewPostResponses, ApiSubmitSubmissionPostData, ApiSubmitSubmissionPostErrors, ApiSubmitSubmissionPostResponses } from './types.gen';
+import type { ApiAverageScoreStatisticsGetData, ApiAverageScoreStatisticsGetResponses, ApiCreateTopicTopicPostData, ApiCreateTopicTopicPostErrors, ApiCreateTopicTopicPostResponses, ApiDeleteSubmissionSubmissionDeleteData, ApiDeleteSubmissionSubmissionDeleteErrors, ApiDeleteSubmissionSubmissionDeleteResponses, ApiDeleteTopicTopicDeleteData, ApiDeleteTopicTopicDeleteErrors, ApiDeleteTopicTopicDeleteResponses, ApiGetReviewOfSubmissionReviewOfGetData, ApiGetReviewOfSubmissionReviewOfGetErrors, ApiGetReviewOfSubmissionReviewOfGetResponses, ApiGetReviewReviewGetData, ApiGetReviewReviewGetErrors, ApiGetReviewReviewGetResponses, ApiGetReviewsReviewsGetData, ApiGetReviewsReviewsGetResponses, ApiGetSubmissionsSubmissionsGetData, ApiGetSubmissionsSubmissionsGetResponses, ApiGetSubmissionSubmissionGetData, ApiGetSubmissionSubmissionGetErrors, ApiGetSubmissionSubmissionGetResponses, ApiGetTopicsTopicsGetData, ApiGetTopicsTopicsGetErrors, ApiGetTopicsTopicsGetResponses, ApiGetTopicTopicGetData, ApiGetTopicTopicGetErrors, ApiGetTopicTopicGetResponses, ApiInsertTopicTopicInsertPostData, ApiInsertTopicTopicInsertPostErrors, ApiInsertTopicTopicInsertPostResponses, ApiReviewReviewPostData, ApiReviewReviewPostErrors, ApiReviewReviewPostResponses, ApiSubmitSubmissionPostData, ApiSubmitSubmissionPostErrors, ApiSubmitSubmissionPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -56,7 +56,7 @@ export const apiRequestReview = <ThrowOnError extends boolean = false>(options: 
  *
  * Get review of a Submission
  */
-export const apiGetReviewOf = <ThrowOnError extends boolean = false>(options: Options<ApiGetReviewOfSubmissionReviewOfGetData, ThrowOnError>) => (options.client ?? client).get<ApiGetReviewOfSubmissionReviewOfGetResponses, ApiGetReviewOfSubmissionReviewOfGetErrors, ThrowOnError>({
+export const apiGetReviewOfSubmission = <ThrowOnError extends boolean = false>(options: Options<ApiGetReviewOfSubmissionReviewOfGetData, ThrowOnError>) => (options.client ?? client).get<ApiGetReviewOfSubmissionReviewOfGetResponses, ApiGetReviewOfSubmissionReviewOfGetErrors, ThrowOnError>({
     responseType: 'json',
     url: '/review/of',
     ...options
@@ -109,7 +109,7 @@ export const apiGetSubmission = <ThrowOnError extends boolean = false>(options: 
  *
  * Submit a submission
  */
-export const apiSubmitSubmission = <ThrowOnError extends boolean = false>(options: Options<ApiSubmitSubmissionPostData, ThrowOnError>) => (options.client ?? client).post<ApiSubmitSubmissionPostResponses, ApiSubmitSubmissionPostErrors, ThrowOnError>({
+export const apiSubmit = <ThrowOnError extends boolean = false>(options: Options<ApiSubmitSubmissionPostData, ThrowOnError>) => (options.client ?? client).post<ApiSubmitSubmissionPostResponses, ApiSubmitSubmissionPostErrors, ThrowOnError>({
     responseType: 'json',
     url: '/submission',
     ...options,
@@ -161,4 +161,19 @@ export const apiCreateTopic = <ThrowOnError extends boolean = false>(options: Op
     responseType: 'json',
     url: '/topic',
     ...options
+});
+
+/**
+ * Api Insert Topic
+ *
+ * Insert a topic
+ */
+export const apiInsertTopic = <ThrowOnError extends boolean = false>(options: Options<ApiInsertTopicTopicInsertPostData, ThrowOnError>) => (options.client ?? client).post<ApiInsertTopicTopicInsertPostResponses, ApiInsertTopicTopicInsertPostErrors, ThrowOnError>({
+    responseType: 'json',
+    url: '/topic/insert',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });

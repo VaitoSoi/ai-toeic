@@ -1,7 +1,7 @@
 import { apiGetTopics, type SlicedTopic } from "@/api";
 import { cn, reduceWords } from "@/lib/utils";
-import { Mail, NotebookText, Plus, Image } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Mail, NotebookText, Plus, Image, Sparkle } from "lucide-react";
+import { useCallback, useEffect, useState, type ComponentProps } from "react";
 import { useNavigate } from "react-router";
 
 function List() {
@@ -28,14 +28,25 @@ function List() {
         <h1 className="text-3xl font-semibold">🖊️ Essays</h1>
         <h2 className="text-xl font-normal ml-12">Select a writing section to begin your training session</h2>
         <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 py-5 gap-5">
-            <div
-                className="min-h-65 flex border-2 rounded-md border-slate-200 hover:border-slate-500 transition-all duration-150 border-dashed group cursor-pointer"
-                onClick={() => navigator("/topic/new", { viewTransition: true })}
-            >
-                <div className="m-auto flex flex-col items-center">
-                    <Plus className="size-1 opacity-0 group-hover:opacity-100 group-hover:size-10 transition-all duration-150" />
-                    <p className="text-xl text-slate-400 group-hover:text-slate-800 transition-all duration-150">Generate new topic</p>
-                </div>
+            <div className="min-h-65 flex">
+                <NewItemCard
+                    className="flex-1 rounded-tl-md rounded-bl-md"
+                    onClick={() => navigator("/topic/new", { viewTransition: true })}
+                >
+                    <div className="m-auto flex flex-col items-center">
+                        <NewItemIcon Component={Sparkle} />
+                        <NewItemParagraph>Generate new topic</NewItemParagraph>
+                    </div>
+                </NewItemCard>
+                <NewItemCard
+                    className="flex-1 rounded-tr-md rounded-br-md"
+                    onClick={() => navigator("/topic/insert", { viewTransition: true })}
+                >
+                    <div className="m-auto flex flex-col items-center">
+                        <NewItemIcon Component={Plus} />
+                        <NewItemParagraph>Insert a topic</NewItemParagraph>
+                    </div>
+                </NewItemCard>
             </div>
             {topics
                 ? topics.map((val) => <div
@@ -60,6 +71,34 @@ function List() {
             }
         </div>
     </div>;
+}
+
+function NewItemCard({ className, ...prop }: ComponentProps<"div">) {
+    return <div
+        className={cn(
+            "flex border-2 border-dashed border-slate-200 hover:border-slate-500 transition-all duration-150 group cursor-pointer",
+            className
+        )}
+        {...prop}
+    />;
+}
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+function NewItemIcon({ Component, className, ...prop }: (ComponentProps<typeof Mail> & { Component: typeof Mail })) {
+    return <Component
+        className={cn(
+            "size-1 opacity-0 group-hover:opacity-100 group-hover:size-10 transition-all duration-150",
+            className
+        )}
+        {...prop}
+    />;
+}
+
+function NewItemParagraph({ className, ...prop }: ComponentProps<"p">) {
+    return <p
+        className={cn("text-xl text-slate-400 group-hover:text-slate-800 transition-all duration-150", className)}
+        {...prop}
+    />;
 }
 
 export default List;

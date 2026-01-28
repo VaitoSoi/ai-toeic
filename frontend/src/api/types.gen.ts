@@ -63,6 +63,16 @@ export type HttpValidationError = {
 };
 
 /**
+ * InsertTopicBody
+ */
+export type InsertTopicBody = {
+    /**
+     * Question
+     */
+    question: string;
+};
+
+/**
  * P1DetailScore
  */
 export type P1DetailScore = {
@@ -316,7 +326,7 @@ export type Statistics = {
      */
     total_submission: number;
     /**
-     * Total topic
+     * Total Topic
      */
     total_topic: number;
     /**
@@ -457,10 +467,14 @@ export type ApiReviewReviewPostError = ApiReviewReviewPostErrors[keyof ApiReview
 
 export type ApiReviewReviewPostResponses = {
     /**
+     * Response Api Review Review Post
+     *
      * Successful Response
      */
     200: string;
 };
+
+export type ApiReviewReviewPostResponse = ApiReviewReviewPostResponses[keyof ApiReviewReviewPostResponses];
 
 export type ApiGetReviewOfSubmissionReviewOfGetData = {
     body?: never;
@@ -746,3 +760,31 @@ export type ApiCreateTopicTopicPostResponses = {
 };
 
 export type ApiCreateTopicTopicPostResponse = ApiCreateTopicTopicPostResponses[keyof ApiCreateTopicTopicPostResponses];
+
+export type ApiInsertTopicTopicInsertPostData = {
+    body: InsertTopicBody;
+    path?: never;
+    query: {
+        /**
+         * Part
+         */
+        part: '2' | '3';
+    };
+    url: '/topic/insert';
+};
+
+export type ApiInsertTopicTopicInsertPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ApiInsertTopicTopicInsertPostError = ApiInsertTopicTopicInsertPostErrors[keyof ApiInsertTopicTopicInsertPostErrors];
+
+export type ApiInsertTopicTopicInsertPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: SlicedTopic;
+};

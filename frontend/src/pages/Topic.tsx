@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Detail from "@/components/Topic/Detail";
 import Generate from "@/components/Topic/Generate";
+import Insert from "@/components/Topic/Insert";
 import Review from "@/components/Topic/Review";
 import Submit from "@/components/Topic/Submit";
 import { useEffect } from "react";
@@ -16,8 +17,8 @@ function Topic() {
     return <div className="w-screen h-screen flex flex-col">
         <Header />
         {
-            id1 == "new"
-                ? <Generate />
+            id1 == "new" || id1 == "insert"
+                ? id1 == "new" ? <Generate /> : <Insert />
                 : child == "submit"
                     ? <Submit topicId={id1} preloadedData={location.state ? JSON.parse(location.state) : undefined} />
                     : child == "submission"
