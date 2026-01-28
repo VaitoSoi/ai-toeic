@@ -1,4 +1,4 @@
-import { BookOpen, Bug, ChevronLeft, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
+import { BookOpen, Bug, ChevronLeft, ChevronsLeftRightEllipsis, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BarLoader } from "react-spinners";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
@@ -29,7 +29,7 @@ function Review({ submissionId }: { submissionId: string }) {
     const [mounted, setMounted] = useState(false);
 
     const [reviewId, setReviewId] = useState<string>();
-    const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error">("reviewing");
+    const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error" | "service_failure">("reviewing");
     const [topic, setTopic] = useState<SlicedTopic>();
     const [submission, setSubmission] = useState<SlicedSubmission>();
     const [review, setReview] = useState<SlicedReview>();
@@ -94,6 +94,8 @@ function Review({ submissionId }: { submissionId: string }) {
                 return setStatus("reviewing");
             if (response.data.status == "failed")
                 return setStatus("failed");
+            if (response.data.status == "service_failed")
+                return setStatus("service_failure");
             if (!response.data.overall)
                 return setStatus("error");
             setReview(response.data);
@@ -152,9 +154,7 @@ function Review({ submissionId }: { submissionId: string }) {
     }, [submissionId, navigator]);
 
     const annotations = useCallback((submission: string, reviewAnnotations: ReviewAnnotation[]): Annotation[] => {
-        if (!review) return [];
-        if (!reviewAnnotations) return [];
-        if (!reviewAnnotations.length) return [{ key: "0", text: submission, isAnnotation: false }];
+        if (!review || !reviewAnnotations || !reviewAnnotations.length) return [{ key: "0", text: submission, isAnnotation: false }];
         const annotations: Annotation[] = [];
         let lastIndex = 0;
         for (const annotation of reviewAnnotations) {
@@ -233,30 +233,43 @@ function Review({ submissionId }: { submissionId: string }) {
                             <p className="text-xl px-10 text-center lg:p-0">Please submit the essay again</p>
                         </div>
                     </div>
-                    : status == "error"
+                    : status == "service_failure"
                         ? <div className="m-auto flex flex-col items-center gap-5">
                             <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
-                                <Bug className="w-10 h-10 text-red-500 animate-pulse" />
+                                <ChevronsLeftRightEllipsis className="w-10 h-10 text-red-500 animate-pulse" />
                             </div>
                             <div className="flex flex-col items-center">
-                                <h1 className="text-3xl font-bold">Failed to get review</h1>
-                                <p className="text-xl px-10 text-center lg:p-0">There is an error occured while fetching review</p>
-                                <p className="text-xl text-center lg:p-0">Please look at the console or reload page</p>
+                                <h1 className="text-3xl font-bold">Service Failure</h1>
+                                <p className="text-xl text-center lg:p-0">
+                                    The AI provider returns unexpected code (not 200 or not SUCCESS)<br />
+                                    Please take a look at the server console and API console then try again later
+                                </p>
                             </div>
                         </div>
-                        : <div className="m-auto flex flex-col items-center gap-5">
-                            <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
-                                <CircleQuestionMark className="w-10 h-10 text-red-500 animate-pulse" />
+                        : status == "error"
+                            ? <div className="m-auto flex flex-col items-center gap-5">
+                                <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
+                                    <Bug className="w-10 h-10 text-red-500 animate-pulse" />
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <h1 className="text-3xl font-bold">Failed to get review</h1>
+                                    <p className="text-xl px-10 text-center lg:p-0">There is an error occured while fetching review</p>
+                                    <p className="text-xl text-center lg:p-0">Please look at the console or reload page</p>
+                                </div>
                             </div>
-                            <div className="flex flex-col items-center">
-                                <h1 className="text-3xl font-bold">No review</h1>
-                                <p className="text-xl">This essay haven't been reviewed yet</p>
-                                <div
-                                    className="rounded-md p-3 mt-2 bg-slate-200 font-semibold cursor-pointer"
-                                    onClick={() => reviewNow()}
-                                >Review now</div>
+                            : <div className="m-auto flex flex-col items-center gap-5">
+                                <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
+                                    <CircleQuestionMark className="w-10 h-10 text-red-500 animate-pulse" />
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <h1 className="text-3xl font-bold">No review</h1>
+                                    <p className="text-xl">This essay haven't been reviewed yet</p>
+                                    <div
+                                        className="rounded-md p-3 mt-2 bg-slate-200 font-semibold cursor-pointer"
+                                        onClick={() => reviewNow()}
+                                    >Review now</div>
+                                </div>
                             </div>
-                        </div>
         ) : !review || !topic || !submission
             ? <div className="m-auto flex flex-col items-center gap-5">
                 <h1 className="text-3xl font-bold">Loading data</h1>
