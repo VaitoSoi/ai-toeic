@@ -5,9 +5,13 @@ node {
     
     docker.withRegistry("https://git.vaito.dev", "docker-login") {
         stage("Build") {
-            def image = docker.build "vair.nooi/toeic" "--platform linux/amd64,linux/arm64"
-            image.push "${env.BUILD_ID}"
-            image.push "latest"
+            sh """
+            docker buildx build \
+                --platform ${platforms} \
+                -t ${imageName}:${env.BUILD_ID} \
+                -t ${imageName}:latest \
+                --push .
+            """
         }
     } 
 }
