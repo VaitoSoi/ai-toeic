@@ -30,15 +30,15 @@ function Insert() {
     }, [part, text, navigator]);
 
     return <div className="h-full w-full flex">
-        <div className="m-auto h-full xl:h-auto flex flex-col xl:gap-2">
+        <div className="m-auto h-full md:h-auto flex flex-col md:gap-2">
             <div
-                className="w-fit flex mt-5 xl:mt-0 p-3 lg:px-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
+                className="w-fit flex mt-5 md:mt-0 p-3 lg:px-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
                 onClick={() => navigator("/", { viewTransition: true })}
             >
                 <ChevronLeft className="size-7" />
                 <p className="text-lg">Go back to dashboard</p>
             </div>
-            <div className="xl:min-w-300 h-full xl:min-h-150 gap-5 flex flex-col xl:flex-row lg:border-2 lg:rounded-md p-5">
+            <div className="md:min-w-300 h-full md:min-h-150 gap-5 flex flex-col md:flex-row lg:border-2 lg:rounded-md p-5">
                 <div className="flex flex-col flex-1">
                     <h1 className="text-2xl font-bold flex flex-row gap-1 items-center"><Plus strokeWidth={3} /> Insert a Topic</h1>
                     <h2 className="text-xl font-normal text-slate-400">Select the TOEIC writing part you want to insert:</h2>
@@ -83,7 +83,7 @@ function Insert() {
                         </div>
                     </div>
                     <button
-                        className="ml-auto mt-2 px-3 py-2 text-xl xl:text-lg rounded-md text-white disabled:bg-blue-200 disabled:cursor-not-allowed enabled:bg-blue-600 enabled:cursor-pointer"
+                        className="ml-auto mt-2 px-3 py-2 text-xl md:text-lg rounded-md text-white disabled:bg-blue-200 disabled:cursor-not-allowed enabled:bg-blue-600 enabled:cursor-pointer"
                         disabled={!part || !text?.length}
                         onClick={() => send()}
                     >
