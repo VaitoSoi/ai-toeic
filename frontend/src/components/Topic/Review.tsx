@@ -1,10 +1,10 @@
 import { BookOpen, Bug, ChevronLeft, ChevronsLeftRightEllipsis, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { BarLoader } from "react-spinners";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
-import { apiGetReview, apiGetReviewOfSubmission, apiGetSubmission, apiGetTopic, apiRequestReview, type SlicedSubmission, type Annotation as ReviewAnnotation, type SlicedReview, type SlicedTopic } from "@/api";
+import { apiGetReview, apiGetReviewOfSubmission, apiGetSubmission, apiGetTopic, apiRequestReview, type SlicedSubmission, type Annotation as ReviewAnnotation, type SlicedReview, type SlicedTopic, apiDeleteReview } from "@/api";
 import axios from "axios";
-import { error } from "../Toast";
+import { error, success } from "../Toast";
 import { useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "../ui/checkbox";
@@ -24,7 +24,7 @@ type Annotation = (
 
 function Review({ submissionId }: { submissionId: string }) {
     const radius = 50;
-    const navigator = useNavigate();
+    const routerNavigator = useNavigate();
 
     const [mounted, setMounted] = useState(false);
 
@@ -49,11 +49,11 @@ function Review({ submissionId }: { submissionId: string }) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
                 error("Submission or review not found");
-                navigator("/");
+                routerNavigator("/");
             } else
                 setStatus("error");
         }
-    }, [submissionId, navigator]);
+    }, [submissionId, routerNavigator]);
     useEffect(() => void getReviewId(), [getReviewId]);
 
     const getSubmission = useCallback(async () => {
@@ -61,15 +61,16 @@ function Review({ submissionId }: { submissionId: string }) {
             const response = await apiGetSubmission({ query: { id: submissionId } });
             if (!response.data) return setStatus("error");
             setSubmission(response.data);
+            return response.data;
         } catch (err) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
                 error("Submission or review not found");
-                navigator("/");
+                routerNavigator("/");
             } else
                 setStatus("error");
         }
-    }, [submissionId, navigator]);
+    }, [submissionId, routerNavigator]);
     const getTopic = useCallback(async () => {
         if (!review) return;
         try {
@@ -80,11 +81,11 @@ function Review({ submissionId }: { submissionId: string }) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
                 error("Submission or review not found");
-                navigator("/");
+                routerNavigator("/");
             } else
                 setStatus("error");
         }
-    }, [review, navigator]);
+    }, [review, routerNavigator]);
     const getReview = useCallback(async () => {
         if (!reviewId) return;
         try {
@@ -105,11 +106,11 @@ function Review({ submissionId }: { submissionId: string }) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
                 error("Submission or review not found");
-                navigator("/");
+                routerNavigator("/");
             } else
                 setStatus("error");
         }
-    }, [reviewId, navigator]);
+    }, [reviewId, routerNavigator]);
 
     useEffect(() => {
         if (!reviewId) return;
@@ -141,17 +142,48 @@ function Review({ submissionId }: { submissionId: string }) {
     const reviewNow = useCallback(async () => {
         try {
             const response = await apiRequestReview({ query: { submission_id: submissionId } });
+            if (!response.data || !Object.keys(response.data).length)
+                return error("Can't request a review");
             setStatus("reviewing");
             setReviewId(response.data);
         } catch (err) {
             console.error(err);
             if (axios.isAxiosError(err) && err.status == 404) {
                 error("Submission or review not found");
-                navigator("/");
+                routerNavigator("/");
             } else
                 setStatus("error");
         }
-    }, [submissionId, navigator]);
+    }, [submissionId, routerNavigator]);
+
+    const reReview = useCallback(async () => {
+        if (!reviewId) return error("Can't find review id D:");
+        try {
+            const deleteResponse = await apiDeleteReview({ query: { id: reviewId } });
+            if (!deleteResponse.data || !Object.keys(deleteResponse.data).length)
+                return error("Can't delete review");
+            const reviewResponse = await apiRequestReview({ query: { submission_id: submissionId } });
+            if (!reviewResponse.data || !Object.keys(reviewResponse.data).length)
+                return error("Can't request a review");
+            setReviewId(reviewResponse.data);
+            setStatus("reviewing");
+        } catch (err) {
+            console.error(err);
+            if (axios.isAxiosError(err) && err.status == 404) {
+                error("Submission or review not found");
+                routerNavigator("/");
+            } else
+                setStatus("error");
+        }
+    }, [reviewId, submissionId, routerNavigator]);
+
+    const pasteSubmission = useCallback(async () => {
+        const submissionObj = submission || await getSubmission();
+        if (!submissionObj) return error("Can't get submission");
+        navigator.clipboard.writeText(submissionObj.answers!.map(val => val.content).join("\n"));
+        return success("Pasted :D");
+    }, [submission, getSubmission]);
+
 
     const annotations = useCallback((submission: string, reviewAnnotations: ReviewAnnotation[]): Annotation[] => {
         if (!review || !reviewAnnotations || !reviewAnnotations.length) return [{ key: "0", text: submission, isAnnotation: false }];
@@ -209,76 +241,76 @@ function Review({ submissionId }: { submissionId: string }) {
     return <div className="w-full h-fit flex flex-1 min-h-0 overflow-auto">{
         status != "done" ? (
             status == "reviewing"
-                ? <div className="m-auto flex flex-col items-center gap-5">
+                ? <Container>
                     <div className="relative">
                         <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
                         <div className="relative bg-white p-6 rounded-full shadow-lg border ">
                             <Sparkle className="w-10 h-10 text-blue-500 animate-pulse" />
                         </div>
                     </div>
-                    <div className="flex flex-col items-center">
+                    <TextContainer>
                         <h1 className="text-3xl font-bold">Reviewing</h1>
                         <p className="text-xl px-10 text-center lg:p-0">The AI is reviewing your submission based on TOEIC standards</p>
-                    </div>
+                    </TextContainer>
                     <BarLoader width={300} />
-                </div>
+                </Container>
                 : status == "failed"
-                    ? <div className="m-auto flex flex-col items-center gap-5">
+                    ? <Container>
                         <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
-                            <Sparkle className="w-10 h-10 text-red-500 animate-pulse" />
+                            <Sparkle className="w-10 h-10 text-red-500" />
                         </div>
-                        <div className="flex flex-col items-center">
+                        <TextContainer>
                             <h1 className="text-3xl font-bold">Failed to review</h1>
                             <p className="text-xl px-10 text-center lg:p-0">AI is failed to make a review</p>
                             <p className="text-xl px-10 text-center lg:p-0">Please submit the essay again</p>
-                        </div>
-                    </div>
+                        </TextContainer>
+                        <RetryButtons reReview={reReview} pasteSubmission={pasteSubmission} />
+                    </Container>
                     : status == "service_failure"
-                        ? <div className="m-auto flex flex-col items-center gap-5">
+                        ? <Container>
                             <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
-                                <ChevronsLeftRightEllipsis className="w-10 h-10 text-red-500 animate-pulse" />
+                                <ChevronsLeftRightEllipsis className="w-10 h-10 text-red-500" />
                             </div>
-                            <div className="flex flex-col items-center">
+                            <TextContainer>
                                 <h1 className="text-3xl font-bold">Service Failure</h1>
                                 <p className="text-xl text-center lg:p-0">
                                     The AI provider returns unexpected code (not 200 or not SUCCESS)<br />
                                     Please take a look at the server console and API console then try again later
                                 </p>
-                            </div>
-                        </div>
+                            </TextContainer>
+                            <RetryButtons reReview={reReview} pasteSubmission={pasteSubmission} />
+                        </Container>
                         : status == "error"
-                            ? <div className="m-auto flex flex-col items-center gap-5">
+                            ? <Container>
                                 <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
-                                    <Bug className="w-10 h-10 text-red-500 animate-pulse" />
+                                    <Bug className="w-10 h-10 text-red-500" />
                                 </div>
-                                <div className="flex flex-col items-center">
+                                <TextContainer>
                                     <h1 className="text-3xl font-bold">Failed to get review</h1>
                                     <p className="text-xl px-10 text-center lg:p-0">There is an error occured while fetching review</p>
                                     <p className="text-xl text-center lg:p-0">Please look at the console or reload page</p>
-                                </div>
-                            </div>
-                            : <div className="m-auto flex flex-col items-center gap-5">
+                                </TextContainer>
+                                <Button onClick={pasteSubmission}>Copy submission to clipboard</Button>
+                            </Container>
+                            : <Container>
                                 <div className="bg-red-300 p-6 rounded-full shadow-lg border ">
-                                    <CircleQuestionMark className="w-10 h-10 text-red-500 animate-pulse" />
+                                    <CircleQuestionMark className="w-10 h-10 text-red-500" />
                                 </div>
-                                <div className="flex flex-col items-center">
+                                <TextContainer>
                                     <h1 className="text-3xl font-bold">No review</h1>
                                     <p className="text-xl">This essay haven't been reviewed yet</p>
-                                    <div
-                                        className="rounded-md p-3 mt-2 bg-slate-200 font-semibold cursor-pointer"
-                                        onClick={() => reviewNow()}
-                                    >Review now</div>
-                                </div>
-                            </div>
+                                    <Button onClick={() => reviewNow()}>Review now</Button>
+                                </TextContainer>
+                            </Container>
         ) : !review || !topic || !submission
-            ? <div className="m-auto flex flex-col items-center gap-5">
+            ? <Container>
                 <h1 className="text-3xl font-bold">Loading data</h1>
                 <BarLoader width={300} />
-            </div>
+            </Container>
             : <div className="lg:mx-auto my-5 lg:my-10 w-full lg:w-4/5 h-fit flex flex-col gap-5">
                 <div
                     className="w-fit flex px-3 lg:p-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
-                    onClick={() => navigator(`/topic/${review.topic_id}`, { viewTransition: true })}
+                    onClick={() => routerNavigator(`/topic/${review.topic_id}`, { viewTransition: true })}
                 >
                     <ChevronLeft className="size-7" />
                     <p className="text-lg">Go back to topic</p>
@@ -465,6 +497,35 @@ function UseAnnotation({
             </HoverCard>
         : <span key={annotation.key} className=" whitespace-pre-wrap">{annotation.text}</span>
     )}</p>;
+}
+
+function Button({ className, ...prop }: ComponentProps<"div">) {
+    return <div
+        className={cn("rounded-md p-3 mt-2 bg-slate-100 hover:shadow-md hover:bg-slate-200 transition-all duration-200 font-semibold cursor-pointer", className)}
+        {...prop}
+    />;
+}
+
+function RetryButtons({ reReview, pasteSubmission }: { reReview: () => any, pasteSubmission: () => any }) {
+    return <div className="flex flex-row gap-2">
+        <Button onClick={() => reReview()}>Review again</Button>
+        <Button onClick={() => pasteSubmission()}>Copy submission to clipboard</Button>
+    </div>;
+}
+
+function Container({ className, ...prop }: ComponentProps<"div">) {
+    return <div
+        className={cn("m-auto flex flex-col items-center gap-5", className)}
+        {...prop}
+    />;
+}
+
+
+function TextContainer({ className, ...prop }: ComponentProps<"div">) {
+    return <div
+        className={cn("flex flex-col items-center", className)}
+        {...prop}
+    />;
 }
 
 export default Review;
