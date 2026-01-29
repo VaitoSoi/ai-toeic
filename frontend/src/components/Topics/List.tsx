@@ -50,7 +50,7 @@ function List() {
             </div>
             {topics
                 ? topics.map((val) => <div
-                    className="min-h-65 border-2 rounded-md overflow-hidden hover:shadow-md transition-shadow duration-200 group cursor-pointer"
+                    className="min-h-65 border-2 hover:border-slate-300 rounded-md overflow-hidden hover:shadow-md transition-all duration-200 group cursor-pointer"
                     onClick={() => navigator(`/topic/${val.id}`, { viewTransition: true })}
                 >
                     <div className={cn("w-full h-2", val.color)} />
