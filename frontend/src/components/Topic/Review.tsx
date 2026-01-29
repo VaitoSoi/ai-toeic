@@ -29,7 +29,7 @@ function Review({ submissionId }: { submissionId: string }) {
     const [mounted, setMounted] = useState(false);
 
     const [reviewId, setReviewId] = useState<string>();
-    const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error" | "service_failure">("service_failure");
+    const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error" | "service_failure">("reviewing");
     const [topic, setTopic] = useState<SlicedTopic>();
     const [submission, setSubmission] = useState<SlicedSubmission>();
     const [review, setReview] = useState<SlicedReview>();
@@ -54,7 +54,7 @@ function Review({ submissionId }: { submissionId: string }) {
                 setStatus("error");
         }
     }, [submissionId, routerNavigator]);
-    // useEffect(() => void getReviewId(), [getReviewId]);
+    useEffect(() => void getReviewId(), [getReviewId]);
 
     const getSubmission = useCallback(async () => {
         try {
