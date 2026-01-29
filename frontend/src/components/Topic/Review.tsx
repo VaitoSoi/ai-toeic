@@ -29,7 +29,7 @@ function Review({ submissionId }: { submissionId: string }) {
     const [mounted, setMounted] = useState(false);
 
     const [reviewId, setReviewId] = useState<string>();
-    const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error" | "service_failure">("reviewing");
+    const [status, setStatus] = useState<"no_review" | "reviewing" | "failed" | "done" | "error" | "service_failure">("service_failure");
     const [topic, setTopic] = useState<SlicedTopic>();
     const [submission, setSubmission] = useState<SlicedSubmission>();
     const [review, setReview] = useState<SlicedReview>();
@@ -54,7 +54,7 @@ function Review({ submissionId }: { submissionId: string }) {
                 setStatus("error");
         }
     }, [submissionId, routerNavigator]);
-    useEffect(() => void getReviewId(), [getReviewId]);
+    // useEffect(() => void getReviewId(), [getReviewId]);
 
     const getSubmission = useCallback(async () => {
         try {
@@ -501,13 +501,13 @@ function UseAnnotation({
 
 function Button({ className, ...prop }: ComponentProps<"div">) {
     return <div
-        className={cn("rounded-md p-3 mt-2 bg-slate-100 hover:shadow-md hover:bg-slate-200 transition-all duration-200 font-semibold cursor-pointer", className)}
+        className={cn("rounded-md p-3 mt-2 xl:bg-slate-100 xl:hover:shadow-md xl:hover:bg-slate-200 bg-slate-200 transition-all duration-200 font-semibold cursor-pointer", className)}
         {...prop}
     />;
 }
 
 function RetryButtons({ reReview, pasteSubmission }: { reReview: () => any, pasteSubmission: () => any }) {
-    return <div className="flex flex-row gap-2">
+    return <div className="flex flex-col items-center md:flex-row gap-2">
         <Button onClick={() => reReview()}>Review again</Button>
         <Button onClick={() => pasteSubmission()}>Copy submission to clipboard</Button>
     </div>;
