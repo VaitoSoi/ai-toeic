@@ -76,7 +76,7 @@ function List() {
 function NewItemCard({ className, ...prop }: ComponentProps<"div">) {
     return <div
         className={cn(
-            "flex border-2 border-dashed border-slate-200 hover:border-slate-500 transition-all duration-150 group cursor-pointer",
+            "flex border-2 border-dashed xl:border-slate-200 xl:hover:border-slate-500 border-slate-400 transition-all duration-150 group cursor-pointer",
             className
         )}
         {...prop}
@@ -87,7 +87,7 @@ function NewItemCard({ className, ...prop }: ComponentProps<"div">) {
 function NewItemIcon({ Component, className, ...prop }: (ComponentProps<typeof Mail> & { Component: typeof Mail })) {
     return <Component
         className={cn(
-            "size-1 opacity-0 group-hover:opacity-100 group-hover:size-10 transition-all duration-150",
+            "size-10 xl:size-1 xl:opacity-0 xl:group-hover:opacity-100 xl:group-hover:size-10 transition-all duration-150",
             className
         )}
         {...prop}
@@ -96,7 +96,7 @@ function NewItemIcon({ Component, className, ...prop }: (ComponentProps<typeof M
 
 function NewItemParagraph({ className, ...prop }: ComponentProps<"p">) {
     return <p
-        className={cn("text-xl text-slate-400 group-hover:text-slate-800 transition-all duration-150", className)}
+        className={cn("text-xl text-slate-800 xl:text-slate-400 xl:group-hover:text-slate-800 transition-all duration-150", className)}
         {...prop}
     />;
 }
