@@ -344,7 +344,7 @@ T = TypeVar("T")
 
 async def create_session_and_run(
     func: Callable[[AsyncSession], Awaitable[T]],
-    _session: AsyncSession | None = None,
+    _session: Optional[AsyncSession] = None,
 ) -> T:
     if _session:
         return await func(_session)
@@ -458,7 +458,7 @@ TOPIC
 """
 
 
-async def get_topics(all: bool = False, _session: AsyncSession | None = None):
+async def get_topics(all: bool = False, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statement = select(Topic).order_by(desc(Topic.created_at))
         if not all:
@@ -469,7 +469,7 @@ async def get_topics(all: bool = False, _session: AsyncSession | None = None):
     return await create_session_and_run(_inner, _session)
 
 
-async def _get_topic(id: str, _session: AsyncSession | None = None):
+async def _get_topic(id: str, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statement = select(Topic).where(Topic.id == id).order_by(desc(Topic.created_at))
         topic = (await session.execute(statement)).scalar()
@@ -481,12 +481,12 @@ async def _get_topic(id: str, _session: AsyncSession | None = None):
     return await create_session_and_run(_inner, _session)
 
 
-async def get_topic(id: str, _session: AsyncSession | None = None):
+async def get_topic(id: str, _session: Optional[AsyncSession] = None):
     topic = await _get_topic(id, _session)
     return format_topic(topic)
 
 
-async def _get_question(id, _session: AsyncSession | None = None):
+async def _get_question(id, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statement = select(Question).where(Question.id == id)
         question = (await session.execute(statement)).scalar()
@@ -648,7 +648,7 @@ async def _update_topic_p2_3(
 async def create_topic(
     part: Literal["1", "2", "3"],
     p1_count: int = 5,
-    _session: AsyncSession | None = None,
+    _session: Optional[AsyncSession] = None,
 ):
     async def _inner(session: AsyncSession):
         topic: Topic
@@ -716,7 +716,7 @@ async def insert_topic(
     return format_topic(await _insert_topic(part, question_str, _session))
 
 
-async def delete_topic(id: str, _session: AsyncSession | None = None):
+async def delete_topic(id: str, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         topic = await _get_topic(id)
         await session.delete(topic)
@@ -730,7 +730,7 @@ SUBMISSION
 """
 
 
-async def get_submissions(_session: AsyncSession | None = None):
+async def get_submissions(_session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statement = select(Submission).order_by(desc(Submission.created_at))
         submissions = list((await session.execute(statement)).scalars().all())
@@ -739,7 +739,7 @@ async def get_submissions(_session: AsyncSession | None = None):
     return await create_session_and_run(_inner, _session)
 
 
-async def _get_submission(id: str, _session: AsyncSession | None = None):
+async def _get_submission(id: str, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statement = (
             select(Submission)
@@ -754,12 +754,12 @@ async def _get_submission(id: str, _session: AsyncSession | None = None):
     return await create_session_and_run(_inner, _session)
 
 
-async def get_submission(id: str, _session: AsyncSession | None = None):
+async def get_submission(id: str, _session: Optional[AsyncSession] = None):
     submission = await _get_submission(id, _session)
     return format_submission(submission)
 
 
-async def get_submissions_of_topic(topic_id: str, _session: AsyncSession | None = None):
+async def get_submissions_of_topic(topic_id: str, _session: Optional[AsyncSession] = None):
     topic = await get_topic(topic_id, _session)
     return topic.submissions
 
@@ -772,7 +772,7 @@ class P1SubmitBody(BaseModel):
 async def p1_submit(
     topic_id: str,
     submissions: list[P1SubmitBody],
-    _session: AsyncSession | None = None,
+    _session: Optional[AsyncSession] = None,
 ):
     async def _inner(session: AsyncSession):
         topic = await _get_topic(topic_id, session)
@@ -806,7 +806,7 @@ async def p1_submit(
 async def p23_submit(
     topic_id: str,
     submitted_text: str,
-    _session: AsyncSession | None = None,
+    _session: Optional[AsyncSession] = None,
 ):
     async def _inner(session: AsyncSession):
         topic = await get_topic(topic_id, _session)
@@ -831,7 +831,7 @@ async def p23_submit(
 
 
 # async def update_submission(
-#     id: str, submitted_text: str, _session: AsyncSession | None = None
+#     id: str, submitted_text: str, _session: Optional[AsyncSession] = None
 # ):
 #     async def _inner(session: AsyncSession):
 #         submission = await _get_submission(id, session)
@@ -843,7 +843,7 @@ async def p23_submit(
 #     return await create_session_and_run(_inner)
 
 
-async def delete_submission(id: str, _session: AsyncSession | None = None):
+async def delete_submission(id: str, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         submission = await _get_submission(id)
         await session.delete(submission)
@@ -857,7 +857,7 @@ REVIEW
 """
 
 
-async def get_reviews(_session: AsyncSession | None = None):
+async def get_reviews(_session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statement = select(Review).order_by(desc(Review.created_at))
         reviews = list((await session.execute(statement)).scalars().all())
@@ -866,7 +866,7 @@ async def get_reviews(_session: AsyncSession | None = None):
     return await create_session_and_run(_inner, _session)
 
 
-async def _get_review(id: str, _session: AsyncSession | None = None):
+async def _get_review(id: str, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statement = (
             select(Review).where(Review.id == id).order_by(desc(Review.created_at))
@@ -879,18 +879,18 @@ async def _get_review(id: str, _session: AsyncSession | None = None):
     return await create_session_and_run(_inner, _session)
 
 
-async def get_review(id: str, _session: AsyncSession | None = None):
+async def get_review(id: str, _session: Optional[AsyncSession] = None):
     review = await _get_review(id, _session)
     return format_review(review)
 
 
-async def get_reviews_of_topic(topic_id: str, _session: AsyncSession | None = None):
+async def get_reviews_of_topic(topic_id: str, _session: Optional[AsyncSession] = None):
     topic = await get_topic(topic_id, _session)
     return topic.reviews
 
 
 async def get_review_of_submission(
-    submission_id: str, _session: AsyncSession | None = None
+    submission_id: str, _session: Optional[AsyncSession] = None
 ):
     submission = await _get_submission(submission_id, _session)
     if submission.review:
@@ -1048,7 +1048,7 @@ async def _update_review_p2_3(
         print(format_exc())
 
 
-async def review(submission_id: str, _session: AsyncSession | None = None):
+async def review(submission_id: str, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         submission = await _get_submission(submission_id, session)
         topic = submission.topic
@@ -1089,13 +1089,19 @@ async def review(submission_id: str, _session: AsyncSession | None = None):
 
     return await create_session_and_run(_inner, _session)
 
+async def delete_review(id: str, _session: Optional[AsyncSession] = None):
+    async def _inner(session: AsyncSession):
+        review = await _get_review(id, session)
+        await session.delete(review)
+    
+    return await create_session_and_run(_inner, _session)
 
 """
 STATICS
 """
 
 
-async def get_sessions(_session: AsyncSession | None = None):
+async def get_sessions(_session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statements = select(Session)
 
@@ -1105,7 +1111,7 @@ async def get_sessions(_session: AsyncSession | None = None):
 
 
 async def add_session(
-    start: datetime, end: datetime, _session: AsyncSession | None = None
+    start: datetime, end: datetime, _session: Optional[AsyncSession] = None
 ):
     async def _inner(session: AsyncSession):
         _session = Session(started_at=start, ended_at=end)

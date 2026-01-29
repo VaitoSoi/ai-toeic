@@ -414,6 +414,34 @@ export type ApiGetReviewsReviewsGetResponses = {
 
 export type ApiGetReviewsReviewsGetResponse = ApiGetReviewsReviewsGetResponses[keyof ApiGetReviewsReviewsGetResponses];
 
+export type ApiDeleteReviewReviewDeleteData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    url: '/review';
+};
+
+export type ApiDeleteReviewReviewDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ApiDeleteReviewReviewDeleteError = ApiDeleteReviewReviewDeleteErrors[keyof ApiDeleteReviewReviewDeleteErrors];
+
+export type ApiDeleteReviewReviewDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type ApiGetReviewReviewGetData = {
     body?: never;
     path?: never;
@@ -788,3 +816,5 @@ export type ApiInsertTopicTopicInsertPostResponses = {
      */
     200: SlicedTopic;
 };
+
+export type ApiInsertTopicTopicInsertPostResponse = ApiInsertTopicTopicInsertPostResponses[keyof ApiInsertTopicTopicInsertPostResponses];

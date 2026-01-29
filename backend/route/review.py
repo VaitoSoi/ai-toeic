@@ -2,7 +2,14 @@ from typing import Optional
 
 from fastapi import APIRouter
 
-from lib.db import SlicedReview, get_review, get_review_of_submission, get_reviews, review
+from lib.db import (
+    SlicedReview,
+    delete_review,
+    get_review,
+    get_review_of_submission,
+    get_reviews,
+    review,
+)
 from lib.response import exception_handler
 
 route = APIRouter(
@@ -34,3 +41,7 @@ async def api_get_review_of_submission(submission_id: str):
 @exception_handler
 async def api_review(submission_id: str):
     return (await review(submission_id))[1]
+
+@route.delete("", description="Delete a review", response_model=None)
+async def api_delete_review(id: str):
+    return await delete_review(id)

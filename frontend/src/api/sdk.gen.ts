@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApiAverageScoreStatisticsGetData, ApiAverageScoreStatisticsGetResponses, ApiCreateTopicTopicPostData, ApiCreateTopicTopicPostErrors, ApiCreateTopicTopicPostResponses, ApiDeleteSubmissionSubmissionDeleteData, ApiDeleteSubmissionSubmissionDeleteErrors, ApiDeleteSubmissionSubmissionDeleteResponses, ApiDeleteTopicTopicDeleteData, ApiDeleteTopicTopicDeleteErrors, ApiDeleteTopicTopicDeleteResponses, ApiGetReviewOfSubmissionReviewOfGetData, ApiGetReviewOfSubmissionReviewOfGetErrors, ApiGetReviewOfSubmissionReviewOfGetResponses, ApiGetReviewReviewGetData, ApiGetReviewReviewGetErrors, ApiGetReviewReviewGetResponses, ApiGetReviewsReviewsGetData, ApiGetReviewsReviewsGetResponses, ApiGetSubmissionsSubmissionsGetData, ApiGetSubmissionsSubmissionsGetResponses, ApiGetSubmissionSubmissionGetData, ApiGetSubmissionSubmissionGetErrors, ApiGetSubmissionSubmissionGetResponses, ApiGetTopicsTopicsGetData, ApiGetTopicsTopicsGetErrors, ApiGetTopicsTopicsGetResponses, ApiGetTopicTopicGetData, ApiGetTopicTopicGetErrors, ApiGetTopicTopicGetResponses, ApiInsertTopicTopicInsertPostData, ApiInsertTopicTopicInsertPostErrors, ApiInsertTopicTopicInsertPostResponses, ApiReviewReviewPostData, ApiReviewReviewPostErrors, ApiReviewReviewPostResponses, ApiSubmitSubmissionPostData, ApiSubmitSubmissionPostErrors, ApiSubmitSubmissionPostResponses } from './types.gen';
+import type { ApiAverageScoreStatisticsGetData, ApiAverageScoreStatisticsGetResponses, ApiCreateTopicTopicPostData, ApiCreateTopicTopicPostErrors, ApiCreateTopicTopicPostResponses, ApiDeleteReviewReviewDeleteData, ApiDeleteReviewReviewDeleteErrors, ApiDeleteReviewReviewDeleteResponses, ApiDeleteSubmissionSubmissionDeleteData, ApiDeleteSubmissionSubmissionDeleteErrors, ApiDeleteSubmissionSubmissionDeleteResponses, ApiDeleteTopicTopicDeleteData, ApiDeleteTopicTopicDeleteErrors, ApiDeleteTopicTopicDeleteResponses, ApiGetReviewOfSubmissionReviewOfGetData, ApiGetReviewOfSubmissionReviewOfGetErrors, ApiGetReviewOfSubmissionReviewOfGetResponses, ApiGetReviewReviewGetData, ApiGetReviewReviewGetErrors, ApiGetReviewReviewGetResponses, ApiGetReviewsReviewsGetData, ApiGetReviewsReviewsGetResponses, ApiGetSubmissionsSubmissionsGetData, ApiGetSubmissionsSubmissionsGetResponses, ApiGetSubmissionSubmissionGetData, ApiGetSubmissionSubmissionGetErrors, ApiGetSubmissionSubmissionGetResponses, ApiGetTopicsTopicsGetData, ApiGetTopicsTopicsGetErrors, ApiGetTopicsTopicsGetResponses, ApiGetTopicTopicGetData, ApiGetTopicTopicGetErrors, ApiGetTopicTopicGetResponses, ApiInsertTopicTopicInsertPostData, ApiInsertTopicTopicInsertPostErrors, ApiInsertTopicTopicInsertPostResponses, ApiReviewReviewPostData, ApiReviewReviewPostErrors, ApiReviewReviewPostResponses, ApiSubmitSubmissionPostData, ApiSubmitSubmissionPostErrors, ApiSubmitSubmissionPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -26,6 +26,17 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const apiGetReviews = <ThrowOnError extends boolean = false>(options?: Options<ApiGetReviewsReviewsGetData, ThrowOnError>) => (options?.client ?? client).get<ApiGetReviewsReviewsGetResponses, unknown, ThrowOnError>({
     responseType: 'json',
     url: '/reviews',
+    ...options
+});
+
+/**
+ * Api Delete Review
+ *
+ * Delete a review
+ */
+export const apiDeleteReview = <ThrowOnError extends boolean = false>(options: Options<ApiDeleteReviewReviewDeleteData, ThrowOnError>) => (options.client ?? client).delete<ApiDeleteReviewReviewDeleteResponses, ApiDeleteReviewReviewDeleteErrors, ThrowOnError>({
+    responseType: 'json',
+    url: '/review',
     ...options
 });
 
