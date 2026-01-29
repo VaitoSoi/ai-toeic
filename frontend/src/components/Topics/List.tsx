@@ -30,7 +30,7 @@ function List() {
         <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 py-5 gap-5">
             <div className="min-h-65 flex flex-col">
                 <NewItemCard
-                    className="flex-1 rounded-tl-md rounded-bl-md"
+                    className="flex-1 rounded-tl-md rounded-tr-md"
                     onClick={() => navigator("/topic/new", { viewTransition: true })}
                 >
                     <div className="m-auto flex flex-col items-center">
@@ -39,7 +39,7 @@ function List() {
                     </div>
                 </NewItemCard>
                 <NewItemCard
-                    className="flex-1 rounded-tr-md rounded-br-md"
+                    className="flex-1 rounded-br-md rounded-bl-md"
                     onClick={() => navigator("/topic/insert", { viewTransition: true })}
                 >
                     <div className="m-auto flex flex-col items-center">
