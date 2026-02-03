@@ -23,6 +23,8 @@ from sqlmodel import (
     Field as SQLField,
     Relationship,
     SQLModel,
+    col,
+    delete,
     desc,
     select,
 )
@@ -1091,8 +1093,8 @@ async def review(submission_id: str, _session: Optional[AsyncSession] = None):
 
 async def delete_review(id: str, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
-        review = await _get_review(id, session)
-        await session.delete(review)
+        statement = delete(Review).where(col(Review.id) == id)
+        await session.execute(statement)
     
     return await create_session_and_run(_inner, _session)
 
