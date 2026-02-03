@@ -44,4 +44,5 @@ async def api_review(submission_id: str):
 
 @route.delete("", description="Delete a review", response_model=None)
 async def api_delete_review(id: str):
-    return await delete_review(id)
+    await delete_review(id)
+    return {"message": "ok"}
