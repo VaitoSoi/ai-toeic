@@ -3,7 +3,7 @@ import json
 from random import choice, choices, randint
 from typing import Any, Literal, Optional, Union
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ContentTypeError
 from pydantic import BaseModel, Field, ValidationError
 from sqlmodel import SQLModel
 
@@ -285,6 +285,12 @@ async def generate_image(prompt: str):
             logger.error("generate image - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
 
+        except ContentTypeError:
+            logger.error("generate image - response is not a json")
+            logger.debug(f"status: {response.status}")
+            logger.debug(await response.text())
+            raise ModelFailure(task="generate image", part="1")
+
     raise ModelFailure(task="generate image", detail="reach max retry")
 
 
@@ -369,6 +375,11 @@ async def generate_topic(part: Literal["1", "2", "3"]):
             logger.error(f"generate topic p{part} - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
             continue
+        except ContentTypeError:
+            logger.error(f"generate topic p{part} - response is not a json")
+            logger.debug(f"status: {response.status}")
+            logger.debug(await response.text())
+            raise ModelFailure(task="generate topic", part=part)
 
         sliced = slice_md(data.choices[0].message.content)
 
@@ -437,6 +448,11 @@ async def review_p1(
             logger.error("review p1 - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
             continue
+        except ContentTypeError:
+            logger.error("review p1 - response is not a json")
+            logger.debug(f"status: {response.status}")
+            logger.debug(await response.text())
+            raise ModelFailure(task="review", part="1")
 
         sliced = slice_md(data.choices[0].message.content)
 
@@ -486,6 +502,11 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
             logger.error(f"review p{part} - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
             continue
+        except ContentTypeError:
+            logger.error(f"review p{part} - response is not a json")
+            logger.debug(f"status: {response.status}")
+            logger.debug(await response.text())
+            raise ModelFailure(task="review", part=part)
 
         sliced = slice_md(data.choices[0].message.content)
 
@@ -535,6 +556,11 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
             logger.error("summary review p1 - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
             continue
+        except ContentTypeError:
+            logger.error("summary review p1 - response is not a json")
+            logger.debug(f"status: {response.status}")
+            logger.debug(await response.text())
+            raise ModelFailure(task="summary review", part="1")
 
         sliced = slice_md(data.choices[0].message.content)
 
@@ -546,7 +572,8 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
             logger.error("summary review p1 - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
             logger.exception(error)
-
+        
+        
     raise ModelFailure(task="summary review", part="1", detail="reach max retry")
 
 
