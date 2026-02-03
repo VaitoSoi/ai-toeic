@@ -163,7 +163,7 @@ function Review({ submissionId }: { submissionId: string }) {
             if (!deleteResponse.data || !Object.keys(deleteResponse.data).length)
                 return error("Can't delete review");
             const reviewResponse = await apiRequestReview({ query: { submission_id: submissionId } });
-            if (!reviewResponse.data || !Object.keys(reviewResponse.data).length)
+            if (!reviewResponse.data || !reviewResponse.data.length)
                 return error("Can't request a review");
             setReviewId(reviewResponse.data);
             setStatus("reviewing");
