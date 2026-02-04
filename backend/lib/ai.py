@@ -271,7 +271,10 @@ async def generate_image(prompt: str):
 
         if response.status != 200:
             logger.error(f"generate image - model return code {response.status}")
-            logger.debug(json.dumps(await response.json(), indent=4))
+            try:
+                logger.debug(json.dumps(await response.json(), indent=4))
+            except ContentTypeError:
+                logger.debug(await response.text())
             raise ModelFailure(task="generate image", part="1")
 
         try:
@@ -366,7 +369,10 @@ async def generate_topic(part: Literal["1", "2", "3"]):
 
         if response.status != 200:
             logger.error(f"generate topic p{part} - model return code {response.status}")
-            logger.debug(json.dumps(await response.json(), indent=4))
+            try:
+                logger.debug(json.dumps(await response.json(), indent=4))
+            except ContentTypeError:
+                logger.debug(await response.text())
             raise ModelFailure(task="generate topic", part=part)
 
         try:
@@ -439,7 +445,10 @@ async def review_p1(
 
         if response.status != 200:
             logger.error(f"review p1 - model return code {response.status}")
-            logger.debug(json.dumps(await response.json(), indent=4))
+            try:
+                logger.debug(json.dumps(await response.json(), indent=4))
+            except ContentTypeError:
+                logger.debug(await response.text())
             raise ModelFailure(task="review", part="1")
 
         try:
@@ -493,7 +502,10 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
 
         if response.status != 200:
             logger.error(f"review p{part} - model return code {response.status}")
-            logger.debug(json.dumps(await response.json(), indent=4))
+            try:
+                logger.debug(json.dumps(await response.json(), indent=4))
+            except ContentTypeError:
+                logger.debug(await response.text())
             raise ModelFailure(task="review", part=part)
 
         try:
@@ -547,7 +559,10 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
 
         if response.status != 200:
             logger.error(f"summary review p1 - model return code {response.status}")
-            logger.debug(json.dumps(await response.json(), indent=4))
+            try:
+                logger.debug(json.dumps(await response.json(), indent=4))
+            except ContentTypeError:
+                logger.debug(await response.text())
             raise ModelFailure(task="summary review", part="1")
 
         try:
