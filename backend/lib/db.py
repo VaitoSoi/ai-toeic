@@ -1095,6 +1095,7 @@ async def delete_review(id: str, _session: Optional[AsyncSession] = None):
     async def _inner(session: AsyncSession):
         statement = delete(Review).where(col(Review.id) == id)
         await session.execute(statement)
+        await session.commit()
     
     return await create_session_and_run(_inner, _session)
 
