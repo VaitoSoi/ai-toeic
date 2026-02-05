@@ -130,7 +130,7 @@ function Review({ submissionId }: { submissionId: string }) {
         }
     }, [status, submission, getSubmission]);
     useEffect(() => {
-        if (status == "error" || status == "done" || status == "failed")
+        if (status != "reviewing")
             clearInterval(interval.current);
     }, [status]);
     useEffect(() => {
