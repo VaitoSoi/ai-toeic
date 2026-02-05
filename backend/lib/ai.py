@@ -1,5 +1,6 @@
 import base64
 import json
+import re
 from random import choice, choices, randint
 from typing import Any, Literal, Optional, Union
 
@@ -387,7 +388,7 @@ async def generate_topic(part: Literal["1", "2", "3"]):
             logger.debug(await response.text())
             raise ModelFailure(task="generate topic", part=part)
 
-        sliced = slice_md(data.choices[0].message.content)
+        sliced = slice_tags(data.choices[0].message.content)
 
         try:
             parsed_topic = json.loads(sliced)
@@ -463,7 +464,7 @@ async def review_p1(
             logger.debug(await response.text())
             raise ModelFailure(task="review", part="1")
 
-        sliced = slice_md(data.choices[0].message.content)
+        sliced = slice_tags(data.choices[0].message.content)
 
         try:
             parsed_review = json.loads(sliced)
@@ -520,7 +521,7 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
             logger.debug(await response.text())
             raise ModelFailure(task="review", part=part)
 
-        sliced = slice_md(data.choices[0].message.content)
+        sliced = slice_tags(data.choices[0].message.content)
 
         try:
             parsed_review = json.loads(sliced)
@@ -577,7 +578,7 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
             logger.debug(await response.text())
             raise ModelFailure(task="summary review", part="1")
 
-        sliced = slice_md(data.choices[0].message.content)
+        sliced = slice_tags(data.choices[0].message.content)
 
         try:
             parsed_review = json.loads(sliced)
@@ -592,7 +593,9 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
     raise ModelFailure(task="summary review", part="1", detail="reach max retry")
 
 
-def slice_md(text: str):
+think_pattern = r'<think>.*?</think>'
+# Slice md and <think> tag
+def slice_tags(text: str):
     if text.startswith("```json"):
         text = text[7:]
 
@@ -602,4 +605,4 @@ def slice_md(text: str):
     if text.endswith("```"):
         text = text[:-3]
 
-    return text
+    return re.sub(think_pattern, '', text, flags=re.DOTALL).strip()
