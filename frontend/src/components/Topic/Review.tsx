@@ -1,4 +1,4 @@
-import { BookOpen, Bug, ChevronLeft, ChevronsLeftRightEllipsis, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
+import { BookOpen, Bug, ChevronLeft, ChevronRight, ChevronsLeftRightEllipsis, CircleQuestionMark, MessageSquare, PenTool, Percent, Sparkle, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { BarLoader } from "react-spinners";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
@@ -308,12 +308,26 @@ function Review({ submissionId }: { submissionId: string }) {
                 <BarLoader width={300} />
             </Container>
             : <div className="lg:mx-auto my-5 lg:my-10 w-full lg:w-4/5 h-fit flex flex-col gap-5">
-                <div
-                    className="w-fit flex px-3 lg:p-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
-                    onClick={() => routerNavigator(`/topic/${review.topic_id}`, { viewTransition: true })}
-                >
-                    <ChevronLeft className="size-7" />
-                    <p className="text-lg">Go back to topic</p>
+                <div className="flex flex-row items-center">
+                    <div
+                        className="w-fit flex px-3 lg:p-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
+                        onClick={() => routerNavigator(`/topic/${review.topic_id}`, { viewTransition: true })}
+                    >
+                        <ChevronLeft className="size-7" />
+                        <p className="text-lg">Go back to topic</p>
+                    </div>
+                    <div
+                        className="ml-auto w-fit flex px-3 lg:p-0 flex-row items-center text-slate-400 hover:text-slate-800 cursor-pointer transition-all duration-200"
+                        onClick={() => routerNavigator(`/topic/${review.topic_id}/submit`, {
+                            state: topic.part == "1"
+                                ? JSON.stringify({ topic, submission: submission.answers!.map(val => [val.question_id, val.content]) })
+                                : JSON.stringify({ topic, submission: submission.answers![0].content }),
+                            viewTransition: true
+                        })}
+                    >
+                        <p className="text-lg">Resubmit</p>
+                        <ChevronRight className="size-7" />
+                    </div>
                 </div>
                 <div className="flex flex-col lg:py-5 lg:flex-row gap-5 lg:gap-5 lg:border-2 rounded-md px-5 h-fit">
                     <div className="flex flex-col flex-1 items-center lg:p-5">

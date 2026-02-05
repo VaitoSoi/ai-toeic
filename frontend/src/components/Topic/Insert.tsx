@@ -20,7 +20,7 @@ function Insert() {
             const data = response.data!;
             navigator(
                 `/topic/${data.id}/submit`,
-                { state: JSON.stringify(data) }
+                { state: JSON.stringify({ topic: data }) }
             );
         } catch (err) {
             console.error(err);
@@ -96,8 +96,8 @@ function Insert() {
                         ? <textarea
                             className="flex-1 border rounded-md p-2 resize-none text-lg focus:outline-none text-slate-800 leading-relaxed overflow-auto"
                             placeholder={
-                                (part == "2" ? "Insert an email or a flyer here ✉️" : "Insert an opinion here 🤔") + "\n" + 
-                                "Note: Direction is not automatically included, please manually include one :_D\n" + 
+                                (part == "2" ? "Insert an email or a flyer here ✉️" : "Insert an opinion here 🤔") + "\n" +
+                                "Note: Direction is not automatically included, please manually include one :_D\n" +
                                 "P/s: Markdown supported :D"
                             }
                             onChange={(event) => setText(event.target.value)}

@@ -8,10 +8,10 @@ import { Markdown } from "../ui/markdown";
 import { apiGetTopic, apiRequestReview, apiSubmit, type SlicedTopic } from "@/api";
 import { BACKEND_URL } from "@/api/client.gen";
 
-function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData?: SlicedTopic }) {
+function Submit({ topicId: id, preloadedData, submission }: { topicId: string, preloadedData?: SlicedTopic, submission?: string | Record<string, string> }) {
     const navigator = useNavigate();
     const [topic, setTopic] = useState<SlicedTopic | undefined>(preloadedData || undefined);
-    const [status, setStatus] = useState<"error" | "not_confirmed" | "writing" | "sending" | "sent">("not_confirmed");
+    const [status, setStatus] = useState<"error" | "not_confirmed" | "writing" | "sending" | "sent">(submission ? "writing" : "not_confirmed");
     const topicReloadTimer = useRef<any>(null);
 
     const getTopic = useCallback(async () => {
@@ -152,15 +152,15 @@ function Submit({ topicId: id, preloadedData }: { topicId: string, preloadedData
                         <p className="text-lg">Cancel & Go back</p>
                     </div>
                     {topic.part == "1"
-                        ? <UseP1Submission topic={topic} setStatus={setStatus} />
-                        : <P23Submission topic={topic} setStatus={setStatus} />}
+                        ? <P1Submission topic={topic} setStatus={setStatus} submission={submission as Record<string, string>} />
+                        : <P23Submission topic={topic} setStatus={setStatus} submission={submission as string} />}
                 </div>
     }</div>;
 }
 
-function P23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (status: any) => void }) {
+function P23Submission({ topic, setStatus, submission }: { topic: SlicedTopic, setStatus: (status: any) => void, submission?: string }) {
     const navigator = useNavigate();
-    const [text, setText] = useState<string>("");
+    const [text, setText] = useState<string>(submission || "");
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const submissionTimer = useRef<any>(null);
 
@@ -234,10 +234,10 @@ function P23Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (s
     </div>;
 }
 
-function UseP1Submission({ topic, setStatus }: { topic: SlicedTopic, setStatus: (status: any) => void }) {
+function P1Submission({ topic, setStatus, submission }: { topic: SlicedTopic, setStatus: (status: any) => void, submission?: Record<string, string> }) {
     const navigator = useNavigate();
     const [texts, setTexts] = useState<Record<string, string>>(
-        Object.fromEntries(topic.questions!.map((val) => [val.file, ""]))
+        Object.fromEntries(topic.questions!.map((val) => [val.file, submission?.[val.id] || ""]))
     );
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const submissionTimer = useRef<any>(null);

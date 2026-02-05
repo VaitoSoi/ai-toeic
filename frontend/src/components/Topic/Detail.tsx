@@ -81,7 +81,7 @@ function Detail({ topicId: id, preloadedData }: { topicId: string, preloadedData
                             <div className="flex flex-row gap-2 ml-auto mr-5">
                                 <button
                                     className="bg-blue-400 lg:bg-transparent lg:hover:bg-blue-400 py-3 px-4 lg:p-4 rounded-md flex flex-row items-center gap-2 cursor-pointer transition-all duration-200"
-                                    onClick={() => navigator(`/topic/${topic.id}/submit`, { viewTransition: true, state: JSON.stringify(topic) })}
+                                    onClick={() => navigator(`/topic/${topic.id}/submit`, { viewTransition: true, state: JSON.stringify({ topic }) })}
                                 >
                                     <Plus strokeWidth={3} className="size-7" />
                                     <p className="text-lg font-normal">Write new essay</p>
