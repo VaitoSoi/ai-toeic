@@ -763,7 +763,9 @@ async def get_submission(id: str, _session: Optional[AsyncSession] = None):
 
 async def get_submissions_of_topic(topic_id: str, _session: Optional[AsyncSession] = None):
     topic = await get_topic(topic_id, _session)
-    return topic.submissions
+    submissions = topic.submissions
+    submissions.sort(key=lambda x: x.created_at)
+    return submissions
 
 
 class P1SubmitBody(BaseModel):
