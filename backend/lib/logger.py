@@ -1,6 +1,6 @@
 import logging
+import os
 
-from .env import LOGGING_LEVEL
-
+LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "info").upper()
 logger = logging.getLogger("uvicorn")
 logger.setLevel(LOGGING_LEVEL)

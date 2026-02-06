@@ -9,7 +9,8 @@ from fastapi.staticfiles import StaticFiles
 
 from lib.ai import init as ai_init
 from lib.db import init as db_init
-from lib.env import ENV, LOGGING_LEVEL
+from lib.env import ENV
+from lib.logger import LOGGING_LEVEL
 from lib.task import shutdown
 from route import review_route, statics_route, submission_route, topic_route
 
