@@ -21,6 +21,9 @@ ARTIST_MODEL = os.getenv("ARTIST_MODEL", DEFAULT_MODEL) # Part 1 Image generator
 USE_STREAM = os.getenv("USE_STREAM", "true").lower() in ["true", "t", "yes", "y", "1"]
 try:
     STREAM_CHUNK = int(os.getenv("STREAM_CHUNK", "1000"))
+    if STREAM_CHUNK <= 0:
+        logger.error("STREAM_CHUNK is an invalid number, use default (1000)")
+        STREAM_CHUNK = 1000
 
 except TypeError:
     logger.error("STREAM_CHUNK is not a number, use default (1000)")
