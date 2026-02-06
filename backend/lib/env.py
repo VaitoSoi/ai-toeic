@@ -2,6 +2,8 @@ import os
 
 import dotenv
 
+from .logger import logger
+
 dotenv.load_dotenv()
 
 DB_URL = os.getenv("DB_URL", "sqlite+aiosqlite:///data/db.sqlite")
@@ -16,5 +18,12 @@ QUESTION_MODEL = os.getenv("QUESTION_MODEL", DEFAULT_MODEL)
 REVIEW_MODEL = os.getenv("REVIEW_MODEL", DEFAULT_MODEL)
 ARTIST_MODEL = os.getenv("ARTIST_MODEL", DEFAULT_MODEL) # Part 1 Image generator
 
-LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "info").upper()
+USE_STREAM = os.getenv("USE_STREAM", "true").lower() in ["true", "t", "yes", "y", "1"]
+try:
+    STREAM_CHUNK = int(os.getenv("STREAM_CHUNK", "1000"))
+
+except TypeError:
+    logger.error("STREAM_CHUNK is not a number, use default (1000)")
+    STREAM_CHUNK = 1000
+
 ENV = os.getenv("ENV", "DEV")

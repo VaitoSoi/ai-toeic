@@ -4,7 +4,7 @@ import re
 from random import choice, choices, randint
 from typing import Any, Literal, Optional, Union
 
-from aiohttp import ClientSession, ContentTypeError
+from aiohttp import ClientResponse, ClientSession, ContentTypeError
 from pydantic import BaseModel, Field, ValidationError
 from sqlmodel import SQLModel
 
@@ -14,6 +14,8 @@ from .env import (
     OPENROUTER_URL,
     QUESTION_MODEL,
     REVIEW_MODEL,
+    STREAM_CHUNK,
+    USE_STREAM,
 )
 from .exception import ModelFailure
 from .logger import logger
@@ -248,6 +250,20 @@ class BaseReponse(BaseModel):
     choices: list[BaseReponseChoice]
 
 
+class StreamResponseChoice(BaseModel):
+    index: int
+    delta: BaseReponseMessage
+
+
+class StreamResponse(BaseModel):
+    id: str
+    provider: str
+    model: str
+    object: str
+    created: int
+    choices: list[StreamResponseChoice]
+
+
 def format_message(messages: list[BaseUserMessage]):
     return [message.model_dump() for message in messages]
 
@@ -365,30 +381,44 @@ async def generate_topic(part: Literal["1", "2", "3"]):
                         else P3Response
                     ).model_json_schema(),
                 ),
+                stream=USE_STREAM,
             ).model_dump(),
         )
-
-        if response.status != 200:
-            logger.error(f"generate topic p{part} - model return code {response.status}")
+        if USE_STREAM:
             try:
+                content = await handle_stream(response)
+
+            except Exception as e:
+                logger.error("error ocurred while decoding stream")
+                logger.exception(e)
+                raise ModelFailure(task="review", part=part)
+
+        else:
+            if response.status != 200:
+                logger.error(
+                    f"generate topic p{part} - model return code {response.status}"
+                )
+                try:
+                    logger.debug(json.dumps(await response.json(), indent=4))
+                except ContentTypeError:
+                    logger.debug(await response.text())
+                raise ModelFailure(task="generate topic", part=part)
+
+            try:
+                data = BaseReponse(**(await response.json()))
+            except ValidationError:
+                logger.error(f"generate topic p{part} - fail to validate response")
                 logger.debug(json.dumps(await response.json(), indent=4))
+                continue
             except ContentTypeError:
+                logger.error(f"generate topic p{part} - response is not a json")
+                logger.debug(f"status: {response.status}")
                 logger.debug(await response.text())
-            raise ModelFailure(task="generate topic", part=part)
+                raise ModelFailure(task="generate topic", part=part)
 
-        try:
-            data = BaseReponse(**(await response.json()))
-        except ValidationError:
-            logger.error(f"generate topic p{part} - fail to validate response")
-            logger.debug(json.dumps(await response.json(), indent=4))
-            continue
-        except ContentTypeError:
-            logger.error(f"generate topic p{part} - response is not a json")
-            logger.debug(f"status: {response.status}")
-            logger.debug(await response.text())
-            raise ModelFailure(task="generate topic", part=part)
+            content = data.choices[0].message.content
 
-        sliced = slice_tags(data.choices[0].message.content)
+        sliced = slice_tags(content)
 
         try:
             parsed_topic = json.loads(sliced)
@@ -401,7 +431,7 @@ async def generate_topic(part: Literal["1", "2", "3"]):
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
             logger.error(f"generate topic p{part} - fail to validate response")
-            logger.debug(json.dumps(await response.json(), indent=4))
+            logger.debug(content)
             logger.exception(error)
 
     raise ModelFailure(task="generate topic", part=part, detail="reach max retry")
@@ -498,30 +528,42 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
                 response_format=BaseRequestFormat(
                     type="json_object", json_schema=ReviewResponse.model_json_schema()
                 ),
+                stream=USE_STREAM,
             ).model_dump(),
         )
 
-        if response.status != 200:
-            logger.error(f"review p{part} - model return code {response.status}")
+        if USE_STREAM:
             try:
+                content = await handle_stream(response)
+
+            except Exception as e:
+                logger.error("error ocurred while decoding stream")
+                logger.exception(e)
+                raise ModelFailure(task="review", part=part)
+        else:
+            if response.status != 200:
+                logger.error(f"review p{part} - model return code {response.status}")
+                try:
+                    logger.debug(json.dumps(await response.json(), indent=4))
+                except ContentTypeError:
+                    logger.debug(await response.text())
+                raise ModelFailure(task="review", part=part)
+
+            try:
+                data = BaseReponse(**(await response.json()))
+            except ValidationError:
+                logger.error(f"review p{part} - fail to validate response")
                 logger.debug(json.dumps(await response.json(), indent=4))
+                continue
             except ContentTypeError:
+                logger.error(f"review p{part} - response is not a json")
+                logger.debug(f"status: {response.status}")
                 logger.debug(await response.text())
-            raise ModelFailure(task="review", part=part)
+                raise ModelFailure(task="review", part=part)
 
-        try:
-            data = BaseReponse(**(await response.json()))
-        except ValidationError:
-            logger.error(f"review p{part} - fail to validate response")
-            logger.debug(json.dumps(await response.json(), indent=4))
-            continue
-        except ContentTypeError:
-            logger.error(f"review p{part} - response is not a json")
-            logger.debug(f"status: {response.status}")
-            logger.debug(await response.text())
-            raise ModelFailure(task="review", part=part)
+            content = data.choices[0].message.content
 
-        sliced = slice_tags(data.choices[0].message.content)
+        sliced = slice_tags(content)
 
         try:
             parsed_review = json.loads(sliced)
@@ -529,7 +571,7 @@ async def review_p2_3(part: Literal["2", "3"], topic: str, submission: str):
 
         except (json.decoder.JSONDecodeError, ValidationError) as error:
             logger.error(f"review p{part} - fail to validate response")
-            logger.debug(json.dumps(await response.json(), indent=4))
+            logger.debug(content)
             logger.exception(error)
 
     raise ModelFailure(task="review", part=part, detail="reach max retry")
@@ -588,12 +630,13 @@ async def summary_review_p1(reviews: list[P1ReviewResponse]):
             logger.error("summary review p1 - fail to validate response")
             logger.debug(json.dumps(await response.json(), indent=4))
             logger.exception(error)
-        
-        
+
     raise ModelFailure(task="summary review", part="1", detail="reach max retry")
 
 
-think_pattern = r'<think>.*?</think>'
+think_pattern = r"<think>.*?</think>"
+
+
 # Slice md and <think> tag
 def slice_tags(text: str):
     if text.startswith("```json"):
@@ -605,4 +648,40 @@ def slice_tags(text: str):
     if text.endswith("```"):
         text = text[:-3]
 
-    return re.sub(think_pattern, '', text, flags=re.DOTALL).strip()
+    return re.sub(think_pattern, "", text, flags=re.DOTALL).strip()
+
+
+async def handle_stream(response: ClientResponse):
+    content = ""
+    buffer = ""
+    async for chunk in response.content.iter_chunked(STREAM_CHUNK):
+        buffer += chunk.decode()
+        while True:
+            # Find the next complete SSE line
+            line_end = buffer.find("\n")
+            if line_end == -1:
+                break
+
+            line = buffer[:line_end].strip()
+
+            buffer = buffer[line_end + 1 :]
+            if line == ": OPENROUTER PROCESSING":
+                logger.debug("openrouter said: 'im still alive :D'")
+                continue
+            if line.startswith("data: "):
+                data = line[6:]
+                if data == "[DONE]":
+                    logger.debug("end of streaming")
+                    break
+
+                data_obj = StreamResponse.model_validate_json(data)
+                chunked_content = data_obj.choices[0].delta.content
+                content += chunked_content
+
+            else:
+                if line.__len__() == 0:
+                    continue
+                logger.debug("undefined chunk:")
+                logger.debug(f"-> {line}")
+
+    return content
