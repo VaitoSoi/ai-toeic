@@ -22,6 +22,8 @@ This is the backend of TOEIC Writing Platform
 |ARTIST_MODEL         |DEFAULT_MODEL                     |string              |The model has to be able to generate images (the output modilities including `images`)|
 |LOGGING_LEVEL        |INFO                              |Python logging level|Not case-sensitive|
 |ENV                  |DEV                               |DEV/PROD            |         |
+|USE_STREAM           |true                              |yes/no or true/false|Use "stream"=true to prevent connection timeout|
+|STREAM_CHUNK         |1000                              |int and > 0         |Split stream into STREAM_CHUNK size chunk|                       
 
 <p>* <span style="color: red">Required</span></p>
 
