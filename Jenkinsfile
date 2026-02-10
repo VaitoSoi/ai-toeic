@@ -4,10 +4,20 @@ node {
     }
     
     docker.withRegistry("https://git.vaito.dev", "docker-login") {
-        stage("Build") {
-            def image = docker.build "vair.nooi/toeic"
-            image.push "${env.BUILD_ID}"
-            image.push "latest"
+        stage("Build app") {
+            sh "docker build -t vair.nooi/toeic:${env.BUILD_ID} " +
+                            "-t vair.nooi/toeic:latest " +
+                            "--platform linux/amd64,linux/arm64 " +
+                            "--push " +
+                            "--file app.Dockerfile ."
+        }
+
+        stage("Build backend") {
+            sh "docker build -t vair.nooi/toeic-backend:${env.BUILD_ID} " +
+                            "-t vair.nooi/toeic-backend:latest " +
+                            "--platform linux/amd64,linux/arm64 " +
+                            "--push " +
+                            "--file backend.Dockerfile ."
         }
     } 
 }
