@@ -20,34 +20,41 @@ ENV VITE_BACKEND_URL="/api"
 RUN yarn lint
 RUN yarn build
 
-
 # Stage 2: Backend Exporter - Export uv to requirements.txt file
 FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:debian-slim AS backend-exporter
 
-# Default things
+ARG TARGETPLATFORM
+
 WORKDIR /app
+
 COPY backend/pyproject.toml backend/uv.lock ./
+COPY backend/ ./src/
 
-# Lint
-RUN uv export --frozen --no-dev -o requirements.txt
+RUN uv run ruff check ./src/
 
+RUN case "$TARGETPLATFORM" in \
+      "linux/amd64")  PLAT="x86_64-unknown-linux-gnu" ;; \
+      "linux/arm64")  PLAT="aarch64-unknown-linux-gnu" ;; \
+      *)              PLAT="" ;; \
+    esac && \
+    uv sync --frozen --no-dev \
+      --python-platform "$PLAT"
+
+
+# Stage 2: Run code
 FROM python:3.14-bookworm
 
-# Default things
 WORKDIR /app
 VOLUME /app/data
 EXPOSE 5173
-ENV PATH="/app/.venv/bin:$PATH"
 ENV ENV="PROD"
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Copy installed backend library
-COPY --from=backend-exporter /app/ /app/
+# Copy pre-downloaded .venv
+COPY --from=builder /app/.venv /app/.venv
 
-# Install deps
-RUN pip install -r requirements.txt
-
-# Lint
-RUN ruff check .
+# Copy backend source code
+COPY backend/ .
 
 # Copy built frontend assets to a directory FastAPI can serve
 COPY --from=frontend-builder /app/frontend/dist /app/static

@@ -1,29 +1,37 @@
-FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:debian-slim AS exporter
+# Stage 1: Install dependencies + lint
+FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:python3.14-bookworm AS builder
 
-# Default things
+ARG TARGETPLATFORM
+
 WORKDIR /app
-WORKDIR /app
+
 COPY backend/pyproject.toml backend/uv.lock ./
+COPY backend/ ./src/
 
-# Lint
-RUN uv export --frozen --no-dev -o requirements.txt
+RUN uv run ruff check ./src/
 
+RUN case "$TARGETPLATFORM" in \
+      "linux/amd64")  PLAT="x86_64-unknown-linux-gnu" ;; \
+      "linux/arm64")  PLAT="aarch64-unknown-linux-gnu" ;; \
+      *)              PLAT="" ;; \
+    esac && \
+    uv sync --frozen --no-dev \
+      --python-platform "$PLAT"
+
+
+# Stage 2: Run code
 FROM python:3.14-bookworm
 
-# Default things
 WORKDIR /app
 VOLUME /app/data
 EXPOSE 5173
 ENV ENV="PROD"
 ENV PATH="/app/.venv/bin:$PATH"
 
-COPY --from=exporter /app/ /app/
+# Copy pre-downloaded .venv
+COPY --from=builder /app/.venv /app/.venv
 
-# Install deps
-RUN pip install -r requirements.txt
+# Copy backend source code
+COPY backend/ .
 
-# Lint
-RUN ruff check .
-
-# Start application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5173"]
