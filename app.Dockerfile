@@ -30,30 +30,33 @@ WORKDIR /app
 COPY backend/pyproject.toml backend/uv.lock ./
 COPY backend/ ./src/
 
+# Lint natively
 RUN uv run ruff check ./src/
 
+# Download correct wheels for target platform
 RUN case "$TARGETPLATFORM" in \
       "linux/amd64")  PLAT="x86_64-unknown-linux-gnu" ;; \
       "linux/arm64")  PLAT="aarch64-unknown-linux-gnu" ;; \
       *)              PLAT="" ;; \
     esac && \
-    uv sync --frozen --no-dev \
-      --python-platform "$PLAT"
+    uv export --frozen --no-dev -o requirements.txt && \
+    uv pip install \
+      --target /app/deps \
+      --python-platform "$PLAT" \
+      --only-binary :all: \
+      -r requirements.txt
 
 
-# Stage 2: Run code
+# Final stage — Run code
 FROM python:3.14-bookworm
 
 WORKDIR /app
 VOLUME /app/data
 EXPOSE 5173
 ENV ENV="PROD"
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app/deps:$PYTHONPATH"
 
-# Copy pre-downloaded .venv
-COPY --from=backend-installer /app/.venv /app/.venv
-
-# Copy backend source code
+COPY --from=backend-installer /app/deps /app/deps
 COPY backend/ .
 
 # Copy built frontend assets to a directory FastAPI can serve
