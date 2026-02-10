@@ -1,4 +1,4 @@
-FROM python:3.14-bookworm
+FROM python:3.13-bookworm
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
