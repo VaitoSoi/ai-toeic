@@ -1,14 +1,31 @@
-FROM python:3.13-bookworm
+# Stage 1: Frontend
+FROM node:24-alpine AS frontend-builder
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+WORKDIR /app/frontend
+
+# For yarn
+RUN corepack enable
+
+# Yarn & package things
+COPY frontend/package.json frontend/yarn.lock frontend/.yarnrc.yml* ./
+COPY frontend/.yarn ./.yarn
+
+# Install dependencies
+RUN yarn install --immutable
+
+COPY frontend/ .
+
+# Lint & build
+ENV VITE_BACKEND_URL="/api"
+RUN yarn lint
+RUN yarn build
+
+
+# Stage 2: Backend
+FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:python3.14-trixie AS backend-installer
 
 # Default things
 WORKDIR /app
-VOLUME /app/data
-EXPOSE 5173
-ENV ENV="PROD"
-ENV PATH="/app/.venv/bin:$PATH"
 
 # Install dependencies
 COPY backend/pyproject.toml backend/uv.lock* ./
@@ -18,6 +35,21 @@ COPY backend/ .
 
 # Lint
 RUN uv run ruff check .
+
+FROM python:3.14-bookworm
+
+# Default things
+WORKDIR /app
+VOLUME /app/data
+EXPOSE 5173
+ENV PATH="/app/.venv/bin:$PATH"
+ENV ENV="PROD"
+
+# Copy installed backend library
+COPY --from=backend-installer /app/ /app/
+
+# Copy built frontend assets to a directory FastAPI can serve
+COPY --from=frontend-builder /app/frontend/dist /app/static
 
 # Start application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5173"]
