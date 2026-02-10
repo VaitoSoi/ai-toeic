@@ -63,4 +63,4 @@ COPY backend/ .
 COPY --from=frontend-builder /app/frontend/dist /app/static
 
 # Start application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5173"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5173"]
