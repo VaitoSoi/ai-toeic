@@ -41,7 +41,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV ENV="PROD"
 
 # Copy installed backend library
-COPY --from=backend-installer /app/ /app/
+COPY --from=backend-exporter /app/ /app/
 
 # Install deps
 RUN pip install -r requirements.txt

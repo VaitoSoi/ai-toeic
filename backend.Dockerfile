@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:python3.14-trixie AS installer
+FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:python3.14-trixie AS exporter
 
 # Default things
 WORKDIR /app
@@ -17,7 +17,7 @@ EXPOSE 5173
 ENV ENV="PROD"
 ENV PATH="/app/.venv/bin:$PATH"
 
-COPY --from=installer /app/ /app/
+COPY --from=exporter /app/ /app/
 
 # Install deps
 RUN pip install -r requirements.txt
