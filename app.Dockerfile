@@ -22,7 +22,7 @@ RUN yarn build
 
 
 # Stage 2: Backend Exporter - Export uv to requirements.txt file
-FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:latest AS backend-exporter
+FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:debian-slim AS backend-exporter
 
 # Default things
 WORKDIR /app

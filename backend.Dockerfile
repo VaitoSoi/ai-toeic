@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:python3.14-trixie AS exporter
+FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:debian-slim AS exporter
 
 # Default things
 WORKDIR /app
