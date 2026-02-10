@@ -20,8 +20,8 @@ ENV VITE_BACKEND_URL="/api"
 RUN yarn lint
 RUN yarn build
 
-# Stage 2: Backend Exporter - Export uv to requirements.txt file
-FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:debian-slim AS backend-exporter
+# Stage 2: Backend installer
+FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:debian-slim AS backend-installer
 
 ARG TARGETPLATFORM
 
@@ -51,7 +51,7 @@ ENV ENV="PROD"
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy pre-downloaded .venv
-COPY --from=builder /app/.venv /app/.venv
+COPY --from=backend-installer /app/.venv /app/.venv
 
 # Copy backend source code
 COPY backend/ .
