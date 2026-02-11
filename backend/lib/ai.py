@@ -19,7 +19,6 @@ from .env import (
 )
 from .exception import ModelFailure
 from .logger import logger
-from .typing import Annotation, DetailScore, P1DetailScore, Summary
 
 client: ClientSession
 
@@ -35,94 +34,30 @@ def init():
     )
 
 
-"""
-Request
-"""
+class BaseTheme(BaseModel):
+    theme: str
 
 
-class MessageImageUrlData(BaseModel):
-    url: str
+class P1Theme(BaseTheme):
+    subjects: list[str]
+    actions: list[str]
+    objects: list[str]
 
 
-class MessageContentText(BaseModel):
-    type: Literal["text"] = Field(default="text")
-    text: str
+class P2Theme(BaseTheme):
+    senders: list[str]
+    recipients: list[str]
+    problems: list[str]
 
 
-class MessageContentImage(BaseModel):
-    type: Literal["image_url"] = Field(default="image_url")
-    image_url: MessageImageUrlData
+class P3Theme(BaseTheme):
+    opinions: list[str]
+    keywords: list[str]
 
 
-class BaseUserMessage(BaseModel):
-    role: Literal["user", "system"]
-    content: str | list[MessageContentText | MessageContentImage]
-
-
-class BaseRequestFormat(BaseModel):
-    type: Literal["json_object"]
-    json_schema: dict[str, Any]
-
-
-class BaseRequest(BaseModel):
-    model: str
-    messages: list[BaseUserMessage] | str
-    stream: bool = Field(default=False)
-    response_format: Optional[BaseRequestFormat] = Field(default=None)
-
-
-class ImageConfig(BaseModel):
-    aspect_ratio: str
-
-
-class BaseImageRequest(BaseRequest):
-    modalities: list[str]
-    image_config: Union[dict[str, Any], ImageConfig]
-
-
-"""
-Response
-"""
-
-
-class P1ReviewResponse(SQLModel):
-    overall_score: int
-    feedback: str
-    detail_score: P1DetailScore
-    annotations: list[Annotation]
-
-
-class BaseReponseMessage(BaseModel):
-    role: Literal["assistant"]
-    content: str
-    images: Optional[list["MessageContentImage"]] = Field(default=None)
-
-
-class BaseReponseChoice(BaseModel):
-    index: int
-    message: BaseReponseMessage
-
-
-class BaseReponse(BaseModel):
-    id: str
-    object: str
-    created: int
-    model: str
-    choices: list[BaseReponseChoice]
-
-
-class StreamResponseChoice(BaseModel):
-    index: int
-    delta: BaseReponseMessage
-
-
-class StreamResponse(BaseModel):
-    id: str
-    provider: str
-    model: str
-    object: str
-    created: int
-    choices: list[StreamResponseChoice]
+class Summary(SQLModel):
+    summary: str
+    description: str
 
 
 class P1Response(BaseModel):
@@ -163,35 +98,36 @@ class ReviewResponse(SQLModel):
     level_achieved: int
     overall_feedback: str
     summary_feedback: str
-    detail_score: DetailScore
-    annotations: list[Annotation]
+    detail_score: "DetailScore"
+    annotations: list["Annotation"]
     improvement_suggestions: list[str]
 
 
-"""
-Assets
-"""
+class DetailScore(SQLModel):
+    grammar: int
+    vocabulary: int
+    organization: int
+    task_fulfillment: int
 
 
-class BaseTheme(BaseModel):
-    theme: str
+class P1DetailScore(SQLModel):
+    grammar: int
+    visual_relevance: int
 
 
-class P1Theme(BaseTheme):
-    subjects: list[str]
-    actions: list[str]
-    objects: list[str]
+class P1ReviewResponse(SQLModel):
+    overall_score: int
+    feedback: str
+    detail_score: P1DetailScore
+    annotations: list["Annotation"]
 
 
-class P2Theme(BaseTheme):
-    senders: list[str]
-    recipients: list[str]
-    problems: list[str]
-
-
-class P3Theme(BaseTheme):
-    opinions: list[str]
-    keywords: list[str]
+class Annotation(SQLModel):
+    target_text: str
+    context_before: str
+    type: Literal["grammar", "vocabulary", "coherence", "mechanics", "suggestion"]
+    replacement: str | None
+    feedback: str
 
 
 system_prompt_for_topic_p1 = ""
@@ -254,9 +190,79 @@ with open("assets/submit/p2_3/user.txt") as file:
 with open("assets/error.txt") as file:
     base_fix_json_request = file.read()
 
-"""
-Functions
-"""
+
+class MessageImageUrlData(BaseModel):
+    url: str
+
+
+class MessageContentText(BaseModel):
+    type: Literal["text"] = Field(default="text")
+    text: str
+
+
+class MessageContentImage(BaseModel):
+    type: Literal["image_url"] = Field(default="image_url")
+    image_url: MessageImageUrlData
+
+
+class BaseUserMessage(BaseModel):
+    role: Literal["user", "system"]
+    content: str | list[MessageContentText | MessageContentImage]
+
+
+class BaseRequestFormat(BaseModel):
+    type: Literal["json_object"]
+    json_schema: dict[str, Any]
+
+
+class BaseRequest(BaseModel):
+    model: str
+    messages: list[BaseUserMessage] | str
+    stream: bool = Field(default=False)
+    response_format: Optional[BaseRequestFormat] = Field(default=None)
+
+
+class ImageConfig(BaseModel):
+    aspect_ratio: str
+
+
+class BaseImageRequest(BaseRequest):
+    modalities: list[str]
+    image_config: Union[dict[str, Any], ImageConfig]
+
+
+class BaseReponseMessage(BaseModel):
+    role: Literal["assistant"]
+    content: str
+    images: Optional[list[MessageContentImage]] = Field(default=None)
+
+
+class BaseReponseChoice(BaseModel):
+    index: int
+    message: BaseReponseMessage
+
+
+class BaseReponse(BaseModel):
+    id: str
+    object: str
+    created: int
+    model: str
+    choices: list[BaseReponseChoice]
+
+
+class StreamResponseChoice(BaseModel):
+    index: int
+    delta: BaseReponseMessage
+
+
+class StreamResponse(BaseModel):
+    id: str
+    provider: str
+    model: str
+    object: str
+    created: int
+    choices: list[StreamResponseChoice]
+
 
 def format_message(messages: list[BaseUserMessage]):
     return [message.model_dump() for message in messages]
