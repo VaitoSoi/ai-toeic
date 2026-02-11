@@ -18,31 +18,55 @@ route = APIRouter(
     tags=["topic"],
 )
 
+
 class InsertTopicBody(BaseModel):
     question: str
 
-@route.get("s", description="Get all topics", response_model=list[SlicedTopic])
+
+@route.get(
+    "s",
+    description="Get all topics",
+    response_model=list[SlicedTopic],
+    operation_id="get_topics",
+)
 async def api_get_topics(all: bool = False):
     return await get_topics(all)
 
 
-@route.get("", description="Get a single topic", response_model=SlicedTopic)
+@route.get(
+    "",
+    description="Get a single topic",
+    response_model=SlicedTopic,
+    operation_id="get_topic",
+)
 @exception_handler
 async def api_get_topic(id: str):
     return await get_topic(id)
 
 
-@route.post("", description="Request a topic", response_model=SlicedTopic)
+@route.post(
+    "",
+    description="Request a topic",
+    response_model=SlicedTopic,
+    operation_id="request_topic",
+)
 @exception_handler
 async def api_create_topic(part: Literal["1", "2", "3"], p1_count: int = 5):
     return await create_topic(part=part, p1_count=p1_count)
 
-@route.post("/insert", description="Insert a topic", response_model=SlicedTopic)
+
+@route.post(
+    "/insert",
+    description="Insert a topic",
+    response_model=SlicedTopic,
+    operation_id="insert_topic",
+)
 @exception_handler
 async def api_insert_topic(part: Literal["2", "3"], body: InsertTopicBody):
     return await insert_topic(part, body.question)
 
-@route.delete("", description="Delete a topic")
+
+@route.delete("", description="Delete a topic", operation_id="delete_topic")
 @exception_handler
 async def api_delete_topic(id: str):
     return await delete_topic(id)

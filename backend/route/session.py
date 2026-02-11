@@ -17,18 +17,18 @@ async def session(websocket: WebSocket):
     try:
         while True:
             id = uuid4().__str__()
-            
+
             await websocket.send_text(id)
-            
+
             async with Timeout(5):
                 response = await websocket.receive_text()
-            
+
             if id != response:
                 await websocket.close()
                 break
-            
+
             await sleep(1)
-            
+
     except (WebSocketDisconnect, TimeoutError):
         ...
 
